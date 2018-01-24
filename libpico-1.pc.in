@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@
+Description: A library for providing Pico support.
+URL: http://mypico.org
+Version: @VERSION@
+Libs: -L${libdir} -lpico -lcrypto -lqrencode -lcurl
+Libs.private: 
+Cflags: -I${includedir} 
+

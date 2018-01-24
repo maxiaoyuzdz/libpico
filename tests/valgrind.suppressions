@@ -1,0 +1,8 @@
+{
+   test_check
+   Memcheck:Cond
+   fun:check_cryptosupport_getpublicpem
+   fun:srunner_run
+   fun:main
+}
+

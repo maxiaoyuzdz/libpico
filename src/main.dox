@@ -1,0 +1,308 @@
+/**
+@mainpage
+
+\section libpico Libpico Overview
+
+<b>Version $(VERSION)</b>
+
+\subsection story A story
+
+The cursor blinked at Elly. The next string she'd type in at the keyboard would leave the cursor blinking in the same position, as if she'd done nothing. And yet, this was the most important part of the whole process: the part only she could do.
+
+She knew there was a plan, knew even that she had come up with the plan, but didn't know what the plan was. Maybe if she stared at the screen long enough it would come to her, but she doubted it. If she could get access to the server, she could review the logs of their trial run and reverse engineer the plan.
+
+That would be fine if only she could access the server. She typed. The cursor blinked but didn't move. She hit enter. Waited, but knew immediately it was no good. If she'd entered the correct password it would have logged her in immediately. A delay meant another failure. Blink, blink, blink.
+
+"Login incorrect"
+
+She cursed. Any normal civilian would choose an eight-character password made up of a word with some letters replaced with numbers and punctuation marks. She could crack the shadow file using her 8-GPU rig in a matter of days, if not hours. But the person who hacked her account would have used a strong randomly-generated password.
+
+She knew this because she used strong passwords herself. Impossible for any normal person to remember, but more secure. Her adversary likely used a hardware key logger to get her password, something even the most paranoid security freak is vulnerable to.
+
+What Elly really needed was a better authentication mechanism. Something that didn't require her to use a password, didn't rely on keyboard entry and was as secure -- more secure even -- than her long random passwords. If only such a thing existed, thought Elly, she'd be in a very different position right now.
+
+\subsection summary Summary
+
+This manual documents the libpico API version $(VERSION). It provides structures and functions for performing the SIGMA-I protocol as used by Pico, along with other Pico-relevant functionality such as managing users, performing cryptographic functions and so on.
+
+\subsection structure Documentation structure
+
+The API is structured into related material, however in general functionality is partitioned appropriately by file. Each file can be considered a class. Each class will have an associated opaque data structure. Fields within the data structure are accessed through the functions (equivalent to member functions) in the file. If there's no function available to access a particular member, it's because it shouldn't be amended.
+
+Each class has `class_new()` and `class_delete()` functions used for instantiating and finalising the class data structure.
+
+The documentation should indicate whether a particular member variable is owned by its parent class. If it is, it will be automatically freed when its parent is freed. Otherwise it may need to be freed separately. These details should be made clear in the documentation.
+ 
+\subsection install Installation
+
+Libpico is available for Windows built using Visual Studio 2015. It is also available for Linux in either DEB or RPM format.
+
+\subsubsection windowsinstall Windows installation
+
+There is no specific installation for Windows. Simply download a copy of the Windows archive from the [Pico website](https:mypico.org) and unzip it to a folder called `libpico` on your hard drive. When you want to compile and link a library against libpico, ensure the `libpico/include` folder is contained in your includes path, and that the `libpico` folder is included in your library path. See the \ref examples section for an idea about how to do this.
+
+\subsubsection linuxinstall Linux installation
+
+If you're running Ubuntu you can install libpico directly from the Pico PPA. Enter the following commands to add the PPA to your system:
+
+\verbatim
+sudo add-apt-repository ppa:mypico/ppa
+sudo apt-get update
+\endverbatim
+
+Then install libpico using the following commands. As well as libpico, this will also automatically install all of its dependencies.
+
+\verbatim
+sudo apt install libpico1
+sudo apt install libpico1-dev
+\endverbatim
+
+This will install both the runtime and developer packages. If you just want to use libpico with another program and don't want to create new code linked to libpico, then the first line will be enough.
+
+If you don't want to add the Pico PPA, you can also download the latest package from the [Pico website](https:mypico.org). You'll need to install all of the dependencies yourself if you do it this way (see the @ref deps section). Then use the following to install libpico:
+
+\verbatim
+sudo dpkg -i libpico1_0.0.2-1_amd64.deb
+sudo dpkg -i libpico1-dev_0.0.2-1_amd64.deb
+\endverbatim
+
+As before, you should install either the runtime package, or both the runtime and development packages, depending on your use case.
+
+\subsection build Building from source
+
+Ensure you have all of the dependencies listed \ref deps below. Then something along the following lines should do it.
+
+\subsubsection windowsbuild Building for Windows
+
+To build libpico for Windows, you'll need to have a copy of Visual Studio installed. Here we show how you can build it at the command line, but `cmake` will also produce Visual Studio project files if you ask it to.
+
+Open a Visual Studio command shell and then you can use the following sequence of commands to build the library.
+
+\verbatim
+git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" amd64
+cd libpico
+git submodule update --init
+mkdir build
+cd build 
+cmake .. -G "NMake Makefiles" -DCURL_INCLUDE_DIR=C:\libcurl\include -DCURL_LIBRARY=C:\libcurl\lib\dll-release-x64\libcurl.lib -DCURL_LIBRARY_DEBUG=C:\libcurl\lib\dll-debug-x64\libcurl_debug.lib
+nmake picobt_static
+nmake
+cd ..\LibPicoCSharp
+msbuild.exe /p:Configuration=Release /p:Platform="Any CPU" /p:OutDir=..\..\build
+cd ..\build
+\endverbatim
+
+\subsubsection linuxbuild Building for Linux
+
+\verbatim
+git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+autoreconf --install
+./configure
+make
+\endverbatim
+
+To generate the DEB packages on a Debian-based system run something like the following:
+
+\verbatim
+debuild -us -uc -b --lintian-opts -X changes-file
+\endverbatim
+
+\subsubsection dicbuild Building the documentation
+
+The documentation you're reading now was generated using doxygen. If you want to generate it yourself you should get hold of the libpico source, then use the following commands to set things up.
+
+\verbatim
+autoreconf --install
+./configure
+\endverbatim
+
+You can now generate the documentation using
+
+\verbatim
+make doxygen
+\endverbatim
+
+You'll need various dependencies for this, including:
+ - build-essentials
+ - make
+ - doxygen
+ - libpicobt
+ - libqrencode
+ - libssl
+ - graphviz
+
+The html files will be generated and output to the docs folder.
+
+\subsection deps Dependencies
+
+On Linux libpico requires the following runtime dependencies (at least):
+
+ - libpicobt-run, version 0.0.1 or later
+ - libssl, version 1.0.0 or later
+ - libcurl3
+ - libqrencode3
+ - libbluetooth3, version 4.91 or later
+ - libc6, version 2.14 or later
+
+To build on Linux you'll need the following (at least):
+ - libpicobt-dev, version 0.0.1 or later
+ - libpicobt-run, version 0.0.1 or later
+ - libcurl4-openssl-dev
+ - libqrencode-dev
+ - libssl-dev
+ - libbluetooth-dev, version 4.91 or later
+ - git
+ - gcc
+ - make
+ - check
+ - pkg-config
+ - autotools-dev
+ - devscripts
+ - debhelper
+ - openssh-client
+
+On Windows libpicobt requires the following dependencies to build:
+ - Visual Studio 2015 (VS14)
+ - git
+ - cmake, version 2.8 or later
+
+\subsection examples Example code
+
+Below are two short snippets of code for performing pairing and authentication using libpico. Both of these are for running on the server. To test them, you'll need the Pico app installed on a phone to scan the QR codes they generate.
+
+To build the examples on Linux, save out the code as `pair.c` and `auth.c` and use
+
+\verbatim
+gcc pair.c -o pair `pkg-config --cflags --libs libpico-1`
+gcc auth.c -o auth `pkg-config --cflags --libs libpico-1`
+\endverbatim
+
+The <a href="examples.html">examples</a> page provides some example code for how to use the functionality of libpico.
+
+\subsubsection pair Example pairing code
+
+\include pair.c
+
+\subsubsection auth Example authentication code
+
+\include auth.c
+
+\subsection authors Authors
+
+The libpico library was created by the <a href="https://mypico.org">Pico Team</a>.
+
+*/
+
+/**
+
+\example pair.c
+
+This example shows how you can perform the Pico pairing process using libpico.
+
+\example auth.c
+
+This example shows how you can perform the Pico authentication process using libpico. The authentication will only complete successfully for a Pico that previously paired successfully.
+
+*/
+
+/**
+ * @defgroup Communication Communication
+ * @brief Library functions for managing communications
+ *
+ * libpico requires a channel so that the verifier can communicate with the
+ * prover. Different channels can be used, such as HTTP via rendezvous point
+ * or bluetooth. This module supports different communication types.
+ * 
+ */
+
+/**
+ * @defgroup Protocol Protocol
+ * @brief Library functions for performing the protocol
+ *
+ * The majority of the libpico functionality is for the purpose of performing
+ * the Pico SIGMA-I protocol between a prover and a verifier. This module
+ * provides high-level data structures and functions for performing this 
+ * protocol.
+ * 
+ */
+
+/**
+ * @defgroup Datahandling Data Handling
+ * @brief Library functions for managing and converting data
+ *
+ * When sending data between the prover and verifer, data is transmitted in
+ * a variety of data formats, including base64, json and length-prepended
+ * binary chunks. This module provides support for storing and manipulating
+ * data in various formats.
+ * 
+ */
+
+/**
+ * @defgroup Utility Utility
+ * @brief Static utility functions
+ *
+ * This module provides access to a range of utility functions that are used
+ * in various places. These will mostly be static utilities, and many may have
+ * no user-facing purpose.
+ * 
+ */
+
+/**
+ * @defgroup Debug Debug
+ * @brief Library functions for facilitating debugging
+ *
+ * Debugging can be painful. This module provides funcionality to ease the
+ * debugging pain, for example offering logging, memory management checks
+ * and so on.
+ * 
+ */
+
+/**
+ * @defgroup UI UI
+ * @brief User interface library functions
+ *
+ * As a general rule libpico doesn't concern itself with UI issues. Once
+ * exception is through the use of QR codes, which often need to be generated
+ * for use with Pico. For the few relevant parts of Pico that are user-facing,
+ * this module provides support.
+ * 
+ */
+
+/**
+ * @defgroup Crypto Cryptography
+ * @brief Library functions for performing cryptographic functions
+ *
+ * This isn't a general crypto library, and libpico uses OpenSSL to provide its
+ * underlying cryptography capabilities. Nevertheless, it's often useful to
+ * wrap this functionality with an API that's more applicable for Pico. This
+ * module provides an interface for Pico-specific cryptography.
+ * 
+ */
+
+/**
+ * @defgroup Message Message
+ * @brief Library functions for serialising and deserialising messages
+ *
+ * The Pico protocol is primarily concerned with sending messages backwards and
+ * forwards between the prover and verifier. These messages have defined
+ * structures. This module provides easy funcionality for constructing,
+ * serialising and deserialising these messages.
+ * 
+ */
+
+/**
+ * @defgroup Storage Data Storage
+ * @brief Library functions for storing relevant Pico data
+ *
+ * In general libpico doesn't concern itself with data storage. However, 
+ * occasionally the library will need access to data in a format it can use.
+ * This module provides methods for dealing with such data, including
+ * key data associated with users.
+ * 
+ */
+
+
+
+
+

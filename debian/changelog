@@ -1,0 +1,36 @@
+libpico1 (0.0.2-1) unstable; urgency=low
+
+  * Add QR code bitmap mode, included double size.
+  * Add user timeout mechansim to prevent hanging on suspend.
+  * Impoved unit test coverage.
+  * Provide abstract channel implementation.
+  * Bluetooth channel support.
+  * Added libpicobt as a dependency.
+  * Improved Windows support.
+  * Improved C# interface.
+  * Add support for continuous authentication.
+  * Provide spec file for RPM support.
+  * Support Mer and Fedora.
+  * Changed elliptic curve to prime256v1.
+  * Ensure code is endian-agnostic.
+  * Support for client-side Pico communication.
+  * Switch to using Visual Studio 2015 and .Net 4.6.1.
+  * Improved documentation.
+  * Improved (and less verbose) logging.
+  * New feedback/progress interface.
+  * Static analysis using cpp-check added to build process.
+  * Remove dependency on pico-remove.
+
+ -- David Llewellyn-Jones <David.Llewellyn-Jones@cl.cam.ac.uk>  Tue, 11 Jul 2017 12:03:01 +0100
+
+libpico1 (0.0.1-1) unstable; urgency=low
+
+  * Support multiple connection cycles.
+
+ -- David Llewellyn-Jones <David.Llewellyn-Jones@cl.cam.ac.uk>  Thu, 03 Nov 2016 18:47:25 +0100
+
+libpico1 (0-1) unstable; urgency=low
+
+  * Initial release (Closes: #4).
+
+ -- David Llewellyn-Jones <David.Llewellyn-Jones@cl.cam.ac.uk>  Thu, 01 Sep 2016 16:36:20 +0100

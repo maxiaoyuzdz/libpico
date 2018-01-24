@@ -1,0 +1,25 @@
+Source: libpico1
+Priority: optional
+Maintainer: David Llewellyn-Jones <David.Llewellyn-Jones@cl.cam.ac.uk>
+Build-Depends: debhelper (>= 9), autotools-dev, check, libssl-dev, libcurl4-openssl-dev, libqrencode-dev
+Standards-Version: 3.9.6
+Section: libs
+Homepage: https://www.mypico.org
+Vcs-Git: git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+Vcs-Browser: https://gitlab.dtg.cl.cam.ac.uk/pico/libpico
+
+Package: libpico1-dev
+Section: libdevel
+Architecture: any
+Depends: libpico1 (= ${binary:Version}), libpicobt-dev (>= 0.0.1), libpicobt-run (>= 0.0.1), ${misc:Depends}, libssl-dev, libcurl4-openssl-dev, libqrencode-dev
+Description: Pico support library
+ Provides functionality useful for creating Pico applications. Both client 
+ and server-side support are provided.
+
+Package: libpico1
+Architecture: any
+Depends: libpicobt-run (>= 0.0.1), ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0, libcurl3, libqrencode3
+Description: Pico support library
+ Provides functionality useful for creating Pico applications. Both client 
+ and server-side support are provided.
+

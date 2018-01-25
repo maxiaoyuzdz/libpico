@@ -26,6 +26,9 @@ However, we recommend you build the deb or rpm package instead. See the develope
 
 Libpico is released under the AGPL licence. Read COPYING for information.
 
+## Contributing
+
+We welcome comments and contributions to the project. If you're interested in contributing please see here: https://get.mypico.org/cla/
 
 ## Contact and Links
 

@@ -2,7 +2,7 @@
 
 The Pico project is liberating humanity from passwords. See https://www.mypico.org.
 
-Libpico provides a library for performing server-side Pico pairing and authentication.
+Libpico provides a library for performing Pico pairing and authentication. It has code for both the client and server sides of the Pico protocol.
 
 ## Documentation
 

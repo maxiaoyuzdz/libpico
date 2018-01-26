@@ -6,21 +6,44 @@ Libpico provides a library for performing Pico pairing and authentication. It ha
 
 ## Documentation
 
-For more details on the libpico API, how to build the packages and so on, see:
+For more details on the libpico API and how to build the entire Pico stack, see the developer docs.
 
-https://docs.mypico.org/developer/libpico/
+https://docs.mypico.org/developer/
 
-## Install
+## Install from source
 
-If you have autoconf you should be able to install using the following 3 commands:
+You'll need to ensure you've installed the [build dependencies](https://docs.mypico.org/developer/libpico/#deps) before you attempt to compile and install libpico. This includes building and installing libpicobt from the Pico repositories. See the [libpicobt repository](https://github.com/mypico/libpicobt) for instructions for this.
+
+If you're using Ubuntu 16.04, you can install the remaining build dependencies using `apt`.
+
+```
+sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 libc6 liburl-dispatcher1 \
+  libcurl4-openssl-dev libqrencode-dev libssl-dev libbluetooth-dev git gcc make check \
+  pkg-config autotools-dev devscripts debhelper dh-systemd liburl-dispatcher1-dev \
+  openssh-client doxygen graphviz dh-exec
+```
+
+Assuming you've got all these, download the latest version from the git repository and move inside the project folder.
+
+```
+git clone git@github.com:mypico/libpico.git
+cd libpico
+```
+
+You can now build using autoconf with the following commands:
 
 ```
 ./configure
 make
-make install
 ```
 
-However, we recommend you build the deb or rpm package instead. See the developer docs for details about how to do this.
+After this, the cleanest way to install it is to build the deb or rpm packages and install these:
+
+```
+debuild -us -uc -b --lintian-opts -X changes-file
+sudo dpkg -i ../libpico1_0.0.2-1_amd64.deb
+sudo dpkg -i ../libpico1-dev_0.0.2-1_amd64.deb
+```
 
 ## License
 

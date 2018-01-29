@@ -574,7 +574,7 @@ lib_mockbt_la_SOURCES = \
 
 lib_mockbt_la_CFLAGS = $(AM_CFLAGS) @PICOBT_CFLAGS@
 AM_CFLAGS = -Wall -Werror -I"../include" -pthread @CHECK_CFLAGS@
-LDADD = ../libpico.la .libs/lib_mockbt.la @CHECK_LIBS@ @PICOLIB_LIBS@ 
+LDADD = ../libpico.la .libs/lib_mockbt.la @CHECK_LIBS@ @PICOLIB_LIBS@
 all: all-am
 
 .SUFFIXES:

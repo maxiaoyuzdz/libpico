@@ -37,7 +37,7 @@ Here we show how you can build it at the command line, but `cmake` will also pro
 Open a Visual Studio command shell and then you can use the following sequence of commands to build the library.
 
 \verbatim
-git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+git clone git@github.com:mypico/libpico.git
 call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" amd64
 cd libpico
 git submodule update --init
@@ -112,9 +112,9 @@ If you don't want to add the Pico PPA, you can also download the latest package 
 To build on Linux you'll need the following (at least):
  - libpicobt-dev, version 0.0.1 or later
  - libpicobt-run, version 0.0.1 or later
+ - libssl-dev
  - libcurl4-openssl-dev
  - libqrencode-dev
- - libssl-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
 
@@ -136,19 +136,21 @@ sudo dpkg -i libpico1-dev_$(VERSION)-1_amd64.deb
 To build on Linux you'll need the following (at least):
  - libpicobt-dev, version 0.0.1 or later
  - libpicobt-run, version 0.0.1 or later
+ - libssl-dev
  - libcurl4-openssl-dev
  - libqrencode-dev
- - libssl-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
- - git
- - gcc
- - make
- - check
  - pkg-config
  - autotools-dev
  - devscripts
  - debhelper
+ - dh-systemd
+ - dh-exec
+ - git
+ - gcc
+ - make
+ - check
  - openssh-client
  - doxygen
  - graphviz
@@ -165,7 +167,7 @@ sudo apt install \
 Now grab yourself a copy of the code from the repository and compile the libraries.
 
 \verbatim
-git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+git clone git@github.com:mypico/libpico.git
 cd libpico
 ./configure
 make

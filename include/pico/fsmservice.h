@@ -62,6 +62,7 @@
 #include "pico/shared.h"
 #include "pico/users.h"
 #include "pico/dllpublic.h"
+#include "pico/fsm.h"
 
 // Defines
 
@@ -101,15 +102,6 @@ typedef enum _FSMSERVICESTATE {
  * The internal structure can be found in fsmservice.c
  */
 typedef struct _FsmService FsmService;
-
-typedef void (*FsmWrite)(char const * data, size_t length, void * user_data);
-typedef void (*FsmSetTimeout)(int timeout, void * user_data);
-typedef void (*FsmError)(void * user_data);
-typedef void (*FsmDisconnect)(void * user_data);
-typedef void (*FsmListen)(void * user_data);
-typedef void (*FsmAuthenticated)(int status, void * user_data);
-typedef void (*FsmSessionEnded)(void * user_data);
-typedef void (*FsmStatusUpdate)(int state, void * user_data);
 
 // Function prototypes
 

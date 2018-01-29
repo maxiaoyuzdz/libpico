@@ -5,22 +5,6 @@
 
 <b>Version $(VERSION)</b>
 
-\subsection story A story
-
-The cursor blinked at Elly. The next string she'd type in at the keyboard would leave the cursor blinking in the same position, as if she'd done nothing. And yet, this was the most important part of the whole process: the part only she could do.
-
-She knew there was a plan, knew even that she had come up with the plan, but didn't know what the plan was. Maybe if she stared at the screen long enough it would come to her, but she doubted it. If she could get access to the server, she could review the logs of their trial run and reverse engineer the plan.
-
-That would be fine if only she could access the server. She typed. The cursor blinked but didn't move. She hit enter. Waited, but knew immediately it was no good. If she'd entered the correct password it would have logged her in immediately. A delay meant another failure. Blink, blink, blink.
-
-"Login incorrect"
-
-She cursed. Any normal civilian would choose an eight-character password made up of a word with some letters replaced with numbers and punctuation marks. She could crack the shadow file using her 8-GPU rig in a matter of days, if not hours. But the person who hacked her account would have used a strong randomly-generated password.
-
-She knew this because she used strong passwords herself. Impossible for any normal person to remember, but more secure. Her adversary likely used a hardware key logger to get her password, something even the most paranoid security freak is vulnerable to.
-
-What Elly really needed was a better authentication mechanism. Something that didn't require her to use a password, didn't rely on keyboard entry and was as secure -- more secure even -- than her long random passwords. If only such a thing existed, thought Elly, she'd be in a very different position right now.
-
 \subsection summary Summary
 
 This manual documents the libpico API version $(VERSION). It provides structures and functions for performing the SIGMA-I protocol as used by Pico, along with other Pico-relevant functionality such as managing users, performing cryptographic functions and so on.
@@ -33,48 +17,22 @@ Each class has `class_new()` and `class_delete()` functions used for instantiati
 
 The documentation should indicate whether a particular member variable is owned by its parent class. If it is, it will be automatically freed when its parent is freed. Otherwise it may need to be freed separately. These details should be made clear in the documentation.
  
-\subsection install Installation
-
 Libpico is available for Windows built using Visual Studio 2015. It is also available for Linux in either DEB or RPM format.
 
-\subsubsection windowsinstall Windows installation
+The instructions below assume you're using Ubuntu 16.04. It will build and run on other systems, but you'll need to adjust the instructions to suit your platform if you're using something else.
+
+\subsection windowsinstall Windows installation
 
 There is no specific installation for Windows. Simply download a copy of the Windows archive from the [Pico website](https:mypico.org) and unzip it to a folder called `libpico` on your hard drive. When you want to compile and link a library against libpico, ensure the `libpico/include` folder is contained in your includes path, and that the `libpico` folder is included in your library path. See the \ref examples section for an idea about how to do this.
 
-\subsubsection linuxinstall Linux installation
-
-If you're running Ubuntu you can install libpico directly from the Pico PPA. Enter the following commands to add the PPA to your system:
-
-\verbatim
-sudo add-apt-repository ppa:mypico/ppa
-sudo apt-get update
-\endverbatim
-
-Then install libpico using the following commands. As well as libpico, this will also automatically install all of its dependencies.
-
-\verbatim
-sudo apt install libpico1
-sudo apt install libpico1-dev
-\endverbatim
-
-This will install both the runtime and developer packages. If you just want to use libpico with another program and don't want to create new code linked to libpico, then the first line will be enough.
-
-If you don't want to add the Pico PPA, you can also download the latest package from the [Pico website](https:mypico.org). You'll need to install all of the dependencies yourself if you do it this way (see the @ref deps section). Then use the following to install libpico:
-
-\verbatim
-sudo dpkg -i libpico1_0.0.2-1_amd64.deb
-sudo dpkg -i libpico1-dev_0.0.2-1_amd64.deb
-\endverbatim
-
-As before, you should install either the runtime package, or both the runtime and development packages, depending on your use case.
-
-\subsection build Building from source
-
-Ensure you have all of the dependencies listed \ref deps below. Then something along the following lines should do it.
-
 \subsubsection windowsbuild Building for Windows
 
-To build libpico for Windows, you'll need to have a copy of Visual Studio installed. Here we show how you can build it at the command line, but `cmake` will also produce Visual Studio project files if you ask it to.
+To build libpico for Windows, you'll need to have the following installed on your machine.
+ - Visual Studio 2015 (VS14)
+ - git
+ - cmake, version 2.8 or later
+
+Here we show how you can build it at the command line, but `cmake` will also produce Visual Studio project files if you ask it to.
 
 Open a Visual Studio command shell and then you can use the following sequence of commands to build the library.
 
@@ -93,50 +51,26 @@ msbuild.exe /p:Configuration=Release /p:Platform="Any CPU" /p:OutDir=..\..\build
 cd ..\build
 \endverbatim
 
-\subsubsection linuxbuild Building for Linux
+\subsection linuxinstall Linux installation
+
+Before installing libpico you should decide whether you want the runtime, or developer version of the library. If you just want to run other programs that use libpico, the runtime version will be fine. If you plan to develop your own software that needs libpico, or build software from source that uses libpico, you'll need the developer version.
+
+\subsubsection linuxinstallbinrun Runtime binary installation
+
+The easiest way to install libpico is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
 
 \verbatim
-git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
-autoreconf --install
-./configure
-make
+sudo add-apt-repository ppa:mypico/ppa
+sudo apt-get update
 \endverbatim
 
-To generate the DEB packages on a Debian-based system run something like the following:
+Then install the libpico runtime using the following commands. As well as libpico, this will also automatically install all of its dependencies.
 
 \verbatim
-debuild -us -uc -b --lintian-opts -X changes-file
+sudo apt install libpico1
 \endverbatim
 
-\subsubsection dicbuild Building the documentation
-
-The documentation you're reading now was generated using doxygen. If you want to generate it yourself you should get hold of the libpico source, then use the following commands to set things up.
-
-\verbatim
-autoreconf --install
-./configure
-\endverbatim
-
-You can now generate the documentation using
-
-\verbatim
-make doxygen
-\endverbatim
-
-You'll need various dependencies for this, including:
- - build-essentials
- - make
- - doxygen
- - libpicobt
- - libqrencode
- - libssl
- - graphviz
-
-The html files will be generated and output to the docs folder.
-
-\subsection deps Dependencies
-
-On Linux libpico requires the following runtime dependencies (at least):
+If you don't want to add the Pico PPA, you can also download the latest package from the [Pico website](https:mypico.org). You'll need to install all of the following dependencies yourself if you do it this way.
 
  - libpicobt-run, version 0.0.1 or later
  - libssl, version 1.0.0 or later
@@ -144,6 +78,36 @@ On Linux libpico requires the following runtime dependencies (at least):
  - libqrencode3
  - libbluetooth3, version 4.91 or later
  - libc6, version 2.14 or later
+ - liburl-dispatcher1
+
+See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run. Apart from this, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
+
+\verbatim
+sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 libc6 liburl-dispatcher1
+\endverbatim
+
+Then use the following to install libpico:
+
+<pre class="fragment">
+sudo dpkg -i libpico1_$(VERSION)-1_amd64.deb
+</pre>
+
+\subsubsection linuxinstallbindev Developer binary installation
+
+The easiest way to install the libpico developer files is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
+
+\verbatim
+sudo add-apt-repository ppa:mypico/ppa
+sudo apt-get update
+\endverbatim
+
+Then install the libpico developer files using the following commands. As well as libpico, this will also automatically install all of its dependencies.
+
+\verbatim
+sudo apt install libpico1-dev
+\endverbatim
+
+If you don't want to add the Pico PPA, you can also download the latest package from the [Pico website](https:mypico.org). You'll need to install all of the following dependencies yourself if you do it this way.
 
 To build on Linux you'll need the following (at least):
  - libpicobt-dev, version 0.0.1 or later
@@ -152,6 +116,31 @@ To build on Linux you'll need the following (at least):
  - libqrencode-dev
  - libssl-dev
  - libbluetooth-dev, version 4.91 or later
+ - liburl-dispatcher1-dev
+
+See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run and libpicobt-dev. Apart from these, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
+
+\verbatim
+sudo apt install libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev
+\endverbatim
+
+Then use the following to install libpico:
+
+<pre class="fragment">
+sudo dpkg -i libpico1_$(VERSION)-1_amd64.deb
+sudo dpkg -i libpico1-dev_$(VERSION)-1_amd64.deb
+</pre>
+
+\subsubsection linuxbuild Building from source for Linux
+
+To build on Linux you'll need the following (at least):
+ - libpicobt-dev, version 0.0.1 or later
+ - libpicobt-run, version 0.0.1 or later
+ - libcurl4-openssl-dev
+ - libqrencode-dev
+ - libssl-dev
+ - libbluetooth-dev, version 4.91 or later
+ - liburl-dispatcher1-dev
  - git
  - gcc
  - make
@@ -161,11 +150,46 @@ To build on Linux you'll need the following (at least):
  - devscripts
  - debhelper
  - openssh-client
+ - doxygen
+ - graphviz
 
-On Windows libpicobt requires the following dependencies to build:
- - Visual Studio 2015 (VS14)
- - git
- - cmake, version 2.8 or later
+See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run and libpicobt-dev. Apart from these, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
+
+\verbatim
+sudo apt install \
+  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev \
+  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec \
+  git gcc make check openssh-client doxygen graphviz
+\endverbatim
+
+Now grab yourself a copy of the code from the repository and compile the libraries.
+
+\verbatim
+git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+cd libpico
+./configure
+make
+make check
+\endverbatim
+
+The last command runs the unit tests, so isn't strictly required, but is useful for reassurance that everything built correctly. To generate the DEB packages on a Debian-based system run something like the following:
+
+\verbatim
+debuild -us -uc -b --lintian-opts -X changes-file
+\endverbatim
+
+This will build the two libpico packages and leave them in the parent directory. You can now install these packages so they're ready for use on your system.
+
+<pre class="fragment">
+sudo dpkg -i ../libpico1_$(VERSION)-1_amd64.deb
+sudo dpkg -i ../libpico1-dev_$(VERSION)-1_amd64.deb
+</pre>
+
+The documentation you're reading now was generated using doxygen. If you want to generate it yourself you do so as follows.
+
+\verbatim
+make doxygen
+\endverbatim
 
 \subsection examples Example code
 
@@ -187,6 +211,24 @@ The <a href="examples.html">examples</a> page provides some example code for how
 \subsubsection auth Example authentication code
 
 \include auth.c
+
+\subsection story A story
+
+<em>[If you've got this far, you deserve something a little different.]</em>
+
+The cursor blinked at Elly. The next string she'd type in at the keyboard would leave the cursor blinking in the same position, as if she'd done nothing. And yet, this was the most important part of the whole process: the part only she could do.
+
+She knew there was a plan, knew even that she had come up with the plan, but didn't know what the plan was. Maybe if she stared at the screen long enough it would come to her, but she doubted it. If she could get access to the server, she could review the logs of their trial run and reverse engineer the plan.
+
+That would be fine if only she could access the server. She typed. The cursor blinked but didn't move. She hit enter. Waited, but knew immediately it was no good. If she'd entered the correct password it would have logged her in immediately. A delay meant another failure. Blink, blink, blink.
+
+"Login incorrect"
+
+She cursed. Any normal civilian would choose an eight-character password made up of a word with some letters replaced with numbers and punctuation marks. She could crack the shadow file using her 8-GPU rig in a matter of days, if not hours. But the person who hacked her account would have used a strong randomly-generated password.
+
+She knew this because she used strong passwords herself. Impossible for any normal person to remember, but more secure. Her adversary likely used a hardware key logger to get her password, something even the most paranoid security freak is vulnerable to.
+
+What Elly really needed was a better authentication mechanism. Something that didn't require her to use a password, didn't rely on keyboard entry and was as secure -- more secure even -- than her long random passwords. If only such a thing existed, thought Elly, she'd be in a very different position right now.
 
 \subsection authors Authors
 

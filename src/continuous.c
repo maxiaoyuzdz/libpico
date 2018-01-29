@@ -62,6 +62,7 @@
 #define DEFAULT_CONTINUOUS_TIMEOUT_ACTIVE (10000)
 #define DEFAULT_CONTINUOUS_TIMEOUT_PAUSED (50000)
 #define DEFAULT_CONTINUOUS_TIMEOUT_LEEWAY (5000)
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 
 // Structure definitions
@@ -421,7 +422,7 @@ bool continuous_cycle_start(Continuous * continuous) {
 	
 	if (result) {
 		LOG(LOG_INFO, "First read, allowing default timeout");
-		channel_set_timeout(continuous->channel, DEFAULT_CONTINUOUS_TIMEOUT_ACTIVE + DEFAULT_CONTINUOUS_TIMEOUT_LEEWAY);
+		channel_set_timeout(continuous->channel, DEFAULT_CONTINUOUS_TIMEOUT_ACTIVE);
 		result = continuous_read_pico_reauth(continuous, sequenceNum, NULL);
 		receivedState = continuous->currentState;
 	}
@@ -651,7 +652,7 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
 		messageservicereauth_get_sequencenum(messageservicereauth, sequenceNum);
 		continuous_set_current_state(continuous, messageservicereauth_get_reauthstate(messageservicereauth));
 		if (timeout != NULL) {
-			*timeout = messageservicereauth_get_timeout(messageservicereauth);
+			*timeout = MAX(messageservicereauth_get_timeout(messageservicereauth) - continuous->timeoutLeeway, 0);
 		}
 		messageservicereauth_delete(messageservicereauth);
 
@@ -764,8 +765,8 @@ bool continuous_update_state(Continuous * continuous, REAUTHSTATE newState) {
 bool continuous_reauth(Continuous * continuous, Buffer * returnedStoredData) {
 	bool result;
 
-	LOG(LOG_INFO, "Starting read %d %d", continuous->currentTimeout, continuous->timeoutLeeway);
-	channel_set_timeout(continuous->channel, continuous->currentTimeout + continuous->timeoutLeeway);
+	LOG(LOG_INFO, "Starting read %d", continuous->currentTimeout);
+	channel_set_timeout(continuous->channel, continuous->currentTimeout);
 	result = continuous_read_pico_reauth(continuous, NULL, returnedStoredData);
 
 	if (result) {

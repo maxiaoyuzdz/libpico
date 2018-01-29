@@ -60,7 +60,7 @@ More information can be found at: http://mypico.org
 The Pico project team:
  * Frank Stajano (PI), Frank.Stajano@cl.cam.ac.uk
  * David Llewellyn-Jones, David.Llewellyn-Jones@cl.cam.ac.uk
- * Claudio Dettoni, cd611@cam.ac.uk
+ * Claudio Dettoni, cd611@cl.cam.ac.uk
  * Seb Aebischer, seb.aebischer@cl.cam.ac.uk
  * Kat Krol, kat.krol@cl.cam.ac.uk
  * David Harrison, David.Harrison@cl.cam.ac.uk

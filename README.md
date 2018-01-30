@@ -10,6 +10,10 @@ For more details on the libpico API and how to build the entire Pico stack, see 
 
 https://docs.mypico.org/developer/
 
+If you want to build all the Pico components from source in one go, without having to worry about the details, see:
+
+https://github.com/mypico/pico-build-all
+
 ## Install from source
 
 You'll need to ensure you've installed the [build dependencies](https://docs.mypico.org/developer/libpico/#deps) before you attempt to compile and install libpico. This includes building and installing libpicobt from the Pico repositories. See the [libpicobt repository](https://github.com/mypico/libpicobt) for instructions for this.

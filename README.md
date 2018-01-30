@@ -21,10 +21,10 @@ You'll need to ensure you've installed the [build dependencies](https://docs.myp
 If you're using Ubuntu 16.04, you can install the remaining build dependencies using `apt`.
 
 ```
-sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 libc6 liburl-dispatcher1 \
-  libcurl4-openssl-dev libqrencode-dev libssl-dev libbluetooth-dev git gcc make check \
-  pkg-config autotools-dev devscripts debhelper dh-systemd liburl-dispatcher1-dev \
-  openssh-client doxygen graphviz dh-exec
+sudo apt install \
+  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
+  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
+  git gcc make check openssh-client doxygen graphviz
 ```
 
 Assuming you've got all these, download the latest version from the git repository and move inside the project folder.

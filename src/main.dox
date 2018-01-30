@@ -77,13 +77,13 @@ If you don't want to add the Pico PPA, you can also download the latest package 
  - libcurl3
  - libqrencode3
  - libbluetooth3, version 4.91 or later
- - libc6, version 2.14 or later
  - liburl-dispatcher1
+ - libc6, version 2.14 or later
 
 See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run. Apart from this, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
 
 \verbatim
-sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 libc6 liburl-dispatcher1
+sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 liburl-dispatcher1 libc6
 \endverbatim
 
 Then use the following to install libpico:
@@ -117,11 +117,12 @@ To build on Linux you'll need the following (at least):
  - libqrencode-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
+ - libc6, version 2.14 or later
 
 See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run and libpicobt-dev. Apart from these, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
 
 \verbatim
-sudo apt install libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev
+sudo apt install libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6
 \endverbatim
 
 Then use the following to install libpico:
@@ -141,12 +142,14 @@ To build on Linux you'll need the following (at least):
  - libqrencode-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
+ - libc6, version 2.14 or later
  - pkg-config
  - autotools-dev
  - devscripts
  - debhelper
  - dh-systemd
  - dh-exec
+ - build-essential
  - git
  - gcc
  - make
@@ -159,8 +162,8 @@ See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run
 
 \verbatim
 sudo apt install \
-  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev \
-  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec \
+  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
+  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
   git gcc make check openssh-client doxygen graphviz
 \endverbatim
 

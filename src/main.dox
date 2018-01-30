@@ -143,6 +143,7 @@ To build on Linux you'll need the following (at least):
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
  - libc6, version 2.14 or later
+ - autoconf
  - pkg-config
  - autotools-dev
  - devscripts
@@ -163,7 +164,7 @@ See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run
 \verbatim
 sudo apt install \
   libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
-  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
+  autoconf pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
   git gcc make check openssh-client doxygen graphviz
 \endverbatim
 

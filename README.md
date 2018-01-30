@@ -23,7 +23,7 @@ If you're using Ubuntu 16.04, you can install the remaining build dependencies u
 ```
 sudo apt install \
   libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
-  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
+  autoconf pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
   git gcc make check openssh-client doxygen graphviz
 ```
 

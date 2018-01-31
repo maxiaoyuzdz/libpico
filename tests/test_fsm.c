@@ -461,10 +461,15 @@ START_TEST (fsm_pico_test) {
 	}
 
 	int expectedTimeouts[] = {
+		5000, // Read timeout for ServiceAuthMessage
+		5000, // Read timeout for StatusMessage
 		10000, //Reconnect delay
 		9000, // Continuous timeout
+		11000, // Read timeout for ServiceReauthMessage
 		9000, // Continuous timeout
+		11000, // Read timeout for ServiceReauthMessage
 		9000, // Continuous timeout
+		11000, // Read timeout for ServiceReauthMessage
 		9000 // Continuous timeout
 	};
 

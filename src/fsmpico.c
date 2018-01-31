@@ -69,6 +69,8 @@
 
 // Defines
 
+#define READ_TIMEOUT (5000)
+#define CONTINUOUS_TIMEOUT_LEEWAY (1000)
 #define RECONNECT_DELAY (10000)
 
 // Structure definitions
@@ -111,6 +113,8 @@ struct _FsmPico {
 	FSMPICOSTATE state;
 	AuthFsmComms * comms;
 	void * user_data;
+	
+	int reauthDelay;
 };
 
 // Function prototypes
@@ -164,6 +168,8 @@ FsmPico * fsmpico_new() {
 	fsmpico->comms->authenticated = FsmAuthenticatedNull;
 	fsmpico->comms->sessionEnded = FsmSessionEndedNull;
 	fsmpico->comms->statusUpdate = FsmStatusUpdateNull;
+
+	fsmpico->reauthDelay = 0;
 
 	return fsmpico;
 }
@@ -364,6 +370,8 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 			createMessagePicoAuth(fsmpico, message, fsmpico->extraData);
 			fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 			stateTransition(fsmpico, FSMPICOSTATE_STATUS);
+			// set a timeout for waiting for the status message
+			fsmpico->comms->setTimeout(READ_TIMEOUT, fsmpico->user_data);
 		}
 		break;
 	case FSMPICOSTATE_STATUS:
@@ -390,6 +398,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		result = readMessageServiceReauth(fsmpico, dataread, &timeout);
 		if (result) {
 			stateTransition(fsmpico, FSMPICOSTATE_PICOREAUTH);
+			fsmpico->reauthDelay = timeout;
 			LOG(LOG_DEBUG, "Timeout set to: %d", timeout);
 			// Wait for timeout
 			fsmpico->comms->setTimeout(timeout, fsmpico->user_data);
@@ -425,6 +434,8 @@ void fsmpico_connected(FsmPico * fsmpico) {
 		createMessageStart(fsmpico, message);
 		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 		stateTransition(fsmpico, FSMPICOSTATE_SERVICEAUTH);
+		// set a timeout for waiting for the service auth message
+		fsmpico->comms->setTimeout(READ_TIMEOUT, fsmpico->user_data);
 		break;
 	case FSMPICOSTATE_CONTSTARTPICO:
 		fsmpico->currentState = REAUTHSTATE_CONTINUE;
@@ -489,7 +500,7 @@ void fsmpico_timeout(FsmPico * fsmpico) {
 	message = buffer_new(0);
 
 	switch (fsmpico->state) {
-		case FSMPICOSTATE_CONTSTARTPICO:
+	case FSMPICOSTATE_CONTSTARTPICO:
 		LOG(LOG_DEBUG, "Reconnecting for continuous authentication");
 		fsmpico->comms->reconnect(fsmpico->user_data);
 		break;
@@ -497,9 +508,25 @@ void fsmpico_timeout(FsmPico * fsmpico) {
 		createMessagePicoReauth(fsmpico, message, extraData);
 		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 		stateTransition(fsmpico, FSMPICOSTATE_SERVICEREAUTH);
+		// set a timeout for awaiting a response
+		fsmpico->comms->setTimeout(fsmpico->reauthDelay + CONTINUOUS_TIMEOUT_LEEWAY, fsmpico->user_data);
+		break;
+	case FSMPICOSTATE_SERVICEAUTH:
+	case FSMPICOSTATE_STATUS:
+	case FSMPICOSTATE_SERVICEREAUTH:
+		// gave up waiting for a reply to a sent message, enter error state
+		stateTransition(fsmpico, FSMPICOSTATE_ERROR);
+		fsmpico->comms->error(fsmpico->user_data);
+		break;
+	case FSMPICOSTATE_INVALID:
+	case FSMPICOSTATE_ERROR:
+		// in these states, the state machine is stopped, so ignore it (but log)
+		LOG(LOG_DEBUG, "Timer fired during an invalid state");
 		break;
 	default:
-		LOG(LOG_DEBUG, "Timer fired during an invalid state");
+		// in any other state, we're not expecting a timeout and this is an error
+		stateTransition(fsmpico, FSMPICOSTATE_ERROR);
+		fsmpico->comms->error(fsmpico->user_data);
 		break;
 	}
 

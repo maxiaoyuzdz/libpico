@@ -1,7 +1,7 @@
 /**
  * @file
  * @author cd611@cam.ac.uk 
- * @version $(VERSION)
+ * @version 1.0
  *
  * @section LICENSE
  *
@@ -182,49 +182,49 @@ Node* push_stop(Node* queue, FsmPico* pico, FsmService* service, int currentTime
 	return push_event(queue, e);
 }
 
-void process_event(Event event) {
-	bool isService = event.service != NULL;
-	bool isPico = event.pico != NULL;
+void process_event(Event* e) {
+	bool isService = e->service != NULL;
+	bool isPico = e->pico != NULL;
 
 	ck_assert(isService != isPico);
 
-	switch (event.type) {
+	switch (e->type) {
 	case READ:
 		if (isService) {
-			fsmservice_read(event.service, event.data, event.data_len);
+			fsmservice_read(e->service, e->data, e->data_len);
 		} else {
-			fsmpico_read(event.pico, event.data, event.data_len);
+			fsmpico_read(e->pico, e->data, e->data_len);
 		}
 		break;
 
 	case CONNECTED:
 		if (isService) {
-			fsmservice_connected(event.service);
+			fsmservice_connected(e->service);
 		} else {
-			fsmpico_connected(event.pico);
+			fsmpico_connected(e->pico);
 		}
 		break;
 
 	case DISCONNECTED:
 		if (isService) {
-			fsmservice_disconnected(event.service);
+			fsmservice_disconnected(e->service);
 		} else {
-			fsmpico_disconnected(event.pico);
+			fsmpico_disconnected(e->pico);
 		}
 		break;
 
 	case TIMEOUT:
 		if (isService) {
-			fsmservice_timeout(event.service);
+			fsmservice_timeout(e->service);
 		} else {
-			fsmpico_timeout(event.pico);
+			fsmpico_timeout(e->pico);
 		}
 		break;
 	case STOP:
 		if (isService) {
-			fsmservice_stop(event.service);
+			fsmservice_stop(e->service);
 		} else {
-			fsmpico_stop(event.pico);
+			fsmpico_stop(e->pico);
 		}
 		break;
 	case STOP_LOOP:
@@ -332,7 +332,7 @@ START_TEST (fsm_fsm_test) {
 		Node* head = queue;
 		queue = queue->next;
 		currentTime = head->event.time;
-		process_event(head->event);
+		process_event(&head->event);
 		free(head);
 	}
 
@@ -374,7 +374,7 @@ void * event_loop_thread(void * node_ptr_ptr) {
 				free(head);
 				break;
 			}
-			process_event(head->event);
+			process_event(&head->event);
 			free(head);
 		} else {
 		   pthread_mutex_unlock(&queue_mutex);
@@ -460,8 +460,17 @@ START_TEST (fsm_pico_test) {
 		sem_post(&read_semaphore);
 	}
 
+	int expectedTimeouts[] = {
+		10000, //Reconnect delay
+		9000, // Continuous timeout
+		9000, // Continuous timeout
+		9000, // Continuous timeout
+		9000 // Continuous timeout
+	};
+
 	void picoSetTimeout(int timeout, void * user_data) {
-		ck_assert_int_eq(timeout, 10000);
+		static int i = 0;
+		ck_assert_int_eq(expectedTimeouts[i++], timeout);
 		queue = push_timeout(queue, pico, NULL, currentTime, timeout);
 	}
 

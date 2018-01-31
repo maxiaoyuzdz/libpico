@@ -62,6 +62,7 @@ void * pico_main(void * thread_data) {
 	Continuous * continuous = continuous_new();
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, sharedkey);
+	continuous_set_custom_timeout_leeway(continuous, 500);
 
 	continuous_cycle_start_pico(continuous, NULL);
 
@@ -73,11 +74,11 @@ void * pico_main(void * thread_data) {
 	
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
-    ck_assert_int_eq(timeout, 2000);
+    ck_assert_int_eq(timeout, 1500);
 
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
-    ck_assert_int_eq(timeout, 2000);
+    ck_assert_int_eq(timeout, 1500);
 	
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_STOP);

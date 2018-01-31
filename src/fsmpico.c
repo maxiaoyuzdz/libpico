@@ -72,6 +72,8 @@
 #define READ_TIMEOUT (5000)
 #define CONTINUOUS_TIMEOUT_LEEWAY (1000)
 #define RECONNECT_DELAY (10000)
+#define CONTAUTH_LEEWAY (1000)
+#define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 // Structure definitions
 
@@ -401,7 +403,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 			fsmpico->reauthDelay = timeout;
 			LOG(LOG_DEBUG, "Timeout set to: %d", timeout);
 			// Wait for timeout
-			fsmpico->comms->setTimeout(timeout, fsmpico->user_data);
+			fsmpico->comms->setTimeout(MAX((timeout - CONTAUTH_LEEWAY), 0), fsmpico->user_data);
 		}
 		break;
 	default:

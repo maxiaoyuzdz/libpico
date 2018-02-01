@@ -131,7 +131,7 @@ static void createMessageServiceAuth(FsmService * fsmservice, Buffer * message);
 static bool readMessagePicoAuth(FsmService * fsmservice, Buffer /* const */ * message, Buffer * returnedExtraData);
 static void createMessageStatus(FsmService * fsmservice, Buffer * message, Buffer const * sendExtraData, signed char status);
 static bool readMessagePicoReauth(FsmService * fsmservice, Buffer /* const */ * message, Buffer * returnedExtraData);
-static void createMessageServiceReauth(FsmService * fsmservice, Buffer * message, int timeout);
+static void createMessageServiceReauth(FsmService * fsmservice, Buffer * message, int timeout, const Buffer * extraData);
 static bool fsmservice_check_user(FsmService * fsmservice, Buffer * user, Buffer * symmetrickey);
 
 static void FsmWriteNull(char const * data, size_t length, void * user_data);
@@ -562,7 +562,7 @@ void fsmservice_timeout(FsmService * fsmservice) {
 		fsmservice->comms->sessionEnded(fsmservice->user_data);
 		break;
 	case FSMSERVICESTATE_SERVICEREAUTH:
-		createMessageServiceReauth(fsmservice, message, fsmservice->currentTimeout);
+		createMessageServiceReauth(fsmservice, message, fsmservice->currentTimeout, fsmservice->extraData);
 		fsmservice->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmservice->user_data);
 		fsmservice->state = FSMSERVICESTATE_PICOREAUTH;
 		fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
@@ -746,14 +746,18 @@ static bool readMessagePicoReauth(FsmService * fsmservice, Buffer * message, Buf
  * @param fsmservice The object to apply to.
  * @param message A buffer to store the resulting message in.
  * @param timeout The timeout in milliseconds to send to the Pico.
+ * @param extraData [optional] application data to be included in the message
  */
-static void createMessageServiceReauth(FsmService * fsmservice, Buffer * message, int timeout) {
+static void createMessageServiceReauth(FsmService * fsmservice, Buffer * message, int timeout, const Buffer * extraData) {
 	MessageServiceReAuth * messageservicereauth;
 
 	LOG(LOG_DEBUG, "Send MessageServiceReauth");
 
 	messageservicereauth = messageservicereauth_new();
 	messageservicereauth_set(messageservicereauth, fsmservice->sharedKey, timeout, fsmservice->currentState, fsmservice->serviceSeqNumber);
+	if (extraData != NULL) {
+		messageservicereauth_set_extra_data(messageservicereauth, extraData);
+	}
 	messageservicereauth_serialize(messageservicereauth, message);
 
 	// Increment the sequence number ready for the next message
@@ -1004,7 +1008,9 @@ Buffer const * fsmservice_get_received_extra_data(FsmService * fsmservice) {
 void fsmservice_set_outbound_extra_data(FsmService * fsmservice, Buffer const * extraData) {
 	// Record the extra data
 	buffer_clear(fsmservice->extraData);
-	buffer_append_buffer(fsmservice->extraData, extraData);
+	if (extraData != NULL) {
+		buffer_append_buffer(fsmservice->extraData, extraData);
+	}
 }
 
 /** @} addtogroup Protocol */

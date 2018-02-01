@@ -167,7 +167,7 @@ void messageservicereauth_set(MessageServiceReAuth * messageservicereauth, Buffe
 	}
 }
 
-void messageservicereauth_set_extra_data(MessageServiceReAuth * messageservicereauth, Buffer * extraData) {
+void messageservicereauth_set_extra_data(MessageServiceReAuth * messageservicereauth, const Buffer * extraData) {
 	buffer_clear(messageservicereauth->extraData);
 	buffer_append_buffer(messageservicereauth->extraData, extraData);
 }

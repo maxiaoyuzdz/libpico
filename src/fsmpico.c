@@ -111,6 +111,7 @@ struct _FsmPico {
 	Buffer * sharedKey;
 	Shared * shared;
 	Buffer * extraData;
+	Buffer * returnedExtraData;
 
 	FSMPICOSTATE state;
 	AuthFsmComms * comms;
@@ -126,7 +127,7 @@ static bool readMessageServiceAuth(FsmPico * fsmpico, Buffer const * message);
 static void createMessagePicoAuth(FsmPico * fsmpico, Buffer * message, Buffer const * sendExtraData);
 static bool readMessageStatus(FsmPico * fsmpico, Buffer const * message, Buffer * returnedExtraData, char *status);
 static void createMessagePicoReauth(FsmPico * fsmpico, Buffer * message, Buffer const * sendExtraData);
-static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, int * timeout);
+static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, int * timeout, Buffer * returnedExtraData);
 static void stateTransition(FsmPico* fsmpico, FSMPICOSTATE newState);
 
 static void FsmWriteNull(char const * data, size_t length, void * user_data);
@@ -152,6 +153,7 @@ FsmPico * fsmpico_new() {
 
 	fsmpico->shared = shared_new();
 	fsmpico->extraData = buffer_new(0);
+	fsmpico->returnedExtraData = buffer_new(0);
 
 	fsmpico->currentState = REAUTHSTATE_INVALID;
 	fsmpico->picoSeqNumber = sequencenumber_new();
@@ -202,6 +204,9 @@ void fsmpico_delete(FsmPico * fsmpico) {
 			buffer_delete(fsmpico->sharedKey);
 			fsmpico->sharedKey = NULL;
 		}
+
+		buffer_delete(fsmpico->extraData);
+		buffer_delete(fsmpico->returnedExtraData);
 		
 		FREE(fsmpico->comms);
 
@@ -352,13 +357,11 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 	LOG(LOG_DEBUG, "Read");
 
 	bool result;
-	Buffer * receivedExtraData;
 	int timeout;
 	Buffer * message;
 	Buffer * dataread;
 	char status;
     
-	receivedExtraData = buffer_new(0);
 	message = buffer_new(0);
 	dataread = buffer_new(length);
 	buffer_append(dataread, data, length);
@@ -377,7 +380,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		}
 		break;
 	case FSMPICOSTATE_STATUS:
-		result = readMessageStatus(fsmpico, dataread, receivedExtraData, &status);
+		result = readMessageStatus(fsmpico, dataread, fsmpico->returnedExtraData, &status);
 		if (result) {
 			fsmpico->comms->authenticated((int) status, fsmpico->user_data);
 			fsmpico->comms->disconnect(fsmpico->user_data);
@@ -397,7 +400,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		break;
 	case FSMPICOSTATE_CONTSTARTSERVICE:
 	case FSMPICOSTATE_SERVICEREAUTH:
-		result = readMessageServiceReauth(fsmpico, dataread, &timeout);
+		result = readMessageServiceReauth(fsmpico, dataread, &timeout, fsmpico->returnedExtraData);
 		if (result) {
 			stateTransition(fsmpico, FSMPICOSTATE_PICOREAUTH);
 			fsmpico->reauthDelay = timeout;
@@ -412,7 +415,6 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		break;
 	}
 
-	buffer_delete(receivedExtraData);
 	buffer_delete(message);
 	buffer_delete(dataread);
 }
@@ -423,12 +425,10 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
  * @param fsmpico The object to apply to.
  */
 void fsmpico_connected(FsmPico * fsmpico) {
-	Buffer * extraData;
 	Buffer * message;
 
 	LOG(LOG_DEBUG, "Connected");
 
-	extraData = buffer_new(0);
 	message = buffer_new(0);
 
 	switch (fsmpico->state) {
@@ -444,7 +444,7 @@ void fsmpico_connected(FsmPico * fsmpico) {
 		buffer_clear(fsmpico->sharedKey);
 		buffer_append_buffer(fsmpico->sharedKey, shared_get_shared_key(fsmpico->shared));
 		sequencenumber_random(fsmpico->picoSeqNumber);
-		createMessagePicoReauth(fsmpico, message, extraData);
+		createMessagePicoReauth(fsmpico, message, fsmpico->extraData);
 		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 		stateTransition(fsmpico, FSMPICOSTATE_CONTSTARTSERVICE);
 		break;
@@ -454,7 +454,6 @@ void fsmpico_connected(FsmPico * fsmpico) {
 		break;
 	}
 
-	buffer_delete(extraData);
 	buffer_delete(message);
 }
 
@@ -493,12 +492,10 @@ void fsmpico_disconnected(FsmPico * fsmpico) {
  * @param fsmpico The object to apply to.
  */
 void fsmpico_timeout(FsmPico * fsmpico) {
-	Buffer * extraData;
 	Buffer * message;
 
 	LOG(LOG_DEBUG, "Timeout");
 
-	extraData = buffer_new(0);
 	message = buffer_new(0);
 
 	switch (fsmpico->state) {
@@ -507,7 +504,7 @@ void fsmpico_timeout(FsmPico * fsmpico) {
 		fsmpico->comms->reconnect(fsmpico->user_data);
 		break;
 	case FSMPICOSTATE_PICOREAUTH:
-		createMessagePicoReauth(fsmpico, message, extraData);
+		createMessagePicoReauth(fsmpico, message, fsmpico->extraData);
 		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 		stateTransition(fsmpico, FSMPICOSTATE_SERVICEREAUTH);
 		// set a timeout for awaiting a response
@@ -532,8 +529,55 @@ void fsmpico_timeout(FsmPico * fsmpico) {
 		break;
 	}
 
-	buffer_delete(extraData);
 	buffer_delete(message);
+}
+
+/**
+ * Get the latest extra data that was sent by the Service. This is updated when
+ * the service sends either a ServiceAuth or PicoReauth message. The value is reset
+ * for each of these messages, and so the previous value will be wiped when
+ * either of these messages is received (even if the Pico doesn't send any
+ * extra data).
+ *
+ * To be alerted to any fresh data that arrives, the simplest approach is to
+ * set up an FsmStatusUpdate callback and check for any data recevied on either
+ * of the following two events:
+ *
+ * 1. FSMPICOSTATE_STATUS
+ * 2. FSMPICOSTATE_SERVICEREAUTH
+ *
+ * Then make a call using this function to check whether any new data
+ * has arrived (in which case, the returned buffer will be non-empty).
+ *
+ * @param fsmpico The object to get the extra data from.
+ * @return The latest extra data received from the Service, or an empty buffer.
+ */
+Buffer const * fsmpico_get_received_extra_data(FsmPico * fsmpico) {
+	return fsmpico->returnedExtraData;
+}
+
+/**
+ *
+ * Set the extra data that will be sent to the Service. The data is sent in the 
+ * Status and ServiceReauth messages. As such, to ensure it's set prior to each 
+ * of these messages being sent, it's safe to set the new extra data when an 
+ * update notifcation is triggered for either of the following events:
+ *
+ * 1. FSMPICOSTATE_STATUS
+ * 2. FSMPICOSTATE_SERVICEREAUTH
+ *
+ * These two events are those that immediately proceed the arrival of a
+ * Status or ServiceReauth message.
+ *
+ * @param fsmpico The object to set the extra data.
+ * @return The next extra data to be sent to the Service.
+ */
+void fsmpico_set_outbound_extra_data(FsmPico * fsmpico, Buffer const * extraData) {
+	// Record the extra data
+	buffer_clear(fsmpico->extraData);
+	if (extraData != NULL) {
+		buffer_append_buffer(fsmpico->extraData, extraData);
+	}
 }
 
 
@@ -666,8 +710,10 @@ static void createMessagePicoReauth(FsmPico * fsmpico, Buffer * message, Buffer 
  * @param fsmpico The object to apply to.
  * @param message The message data to interpret.
  * @param timeout A pointer to an integer to return the timeout value in.
+ * @param returnedExtraData A buffer to store any extra data that was extracted
+ *        from the message.
  */
-static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, int * timeout) {
+static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, int * timeout, Buffer * returnedExtraData) {
 	MessageServiceReAuth * messageservicereauth;
 	bool result;
 	bool sequencenumber_match;
@@ -698,6 +744,11 @@ static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, 
 			sequencenumber_match = sequencenumber_equals(fsmpico->serviceSeqNumber, sequenceNum);
 			LOG(LOG_DEBUG, "Sequence number match: %d", sequencenumber_match);
 		}
+	}
+
+	if (result && returnedExtraData != NULL) {
+		buffer_clear(returnedExtraData);
+		buffer_append_buffer(returnedExtraData, messageservicereauth_get_extra_data(messageservicereauth));
 	}
 
 	if (result && sequencenumber_match) {

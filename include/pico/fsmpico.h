@@ -103,6 +103,8 @@ FsmPico * fsmpico_new();
 void fsmpico_delete(FsmPico * fsmpico);
 void fsmpico_set_functions(FsmPico * fsmpico, FsmWrite write, FsmSetTimeout setTimeout, FsmError error, FsmReconnect reconnect, FsmDisconnect disconnect, FsmAuthenticated authenticated, FsmSessionEnded sessionEnded, FsmStatusUpdate statusUpdate);
 void fsmpico_set_userdata(FsmPico * fsmpico, void * user_data);
+Buffer const * fsmpico_get_received_extra_data(FsmPico * fsmpico);
+void fsmpico_set_outbound_extra_data(FsmPico * fsmpico, Buffer const * extraData);
 
 // Use these functions to control the authentication process
 void fsmpico_start(FsmPico * fsmpico, Buffer const * extraData, EC_KEY * serviceIdPubKey, EC_KEY * clientIdPubKey, EVP_PKEY * clientIdPrivKey);

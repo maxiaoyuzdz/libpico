@@ -68,7 +68,7 @@ typedef struct _MessageServiceReAuth MessageServiceReAuth;
 MessageServiceReAuth * messageservicereauth_new();
 void messageservicereauth_delete(MessageServiceReAuth * messageservicereauth);
 void messageservicereauth_set(MessageServiceReAuth * messageservicereauth, Buffer * sharedKey, long int timeout, REAUTHSTATE reauthState, SequenceNumber const * sequenceNum);
-void messageservicereauth_set_extra_data(MessageServiceReAuth * messageservicereauth, Buffer * extraData);
+void messageservicereauth_set_extra_data(MessageServiceReAuth * messageservicereauth, const Buffer * extraData);
 const Buffer * messageservicereauth_get_extra_data(MessageServiceReAuth * messageservicereauth);
 void messageservicereauth_serialize(MessageServiceReAuth * messageservicereauth, Buffer * buffer);
 bool messageservicereauth_deserialize(MessageServiceReAuth * messageservicereauth, Buffer const * buffer);

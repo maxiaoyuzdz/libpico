@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([pico], [0.0.2], [Frank.Stajano@cl.cam.ac.uk, David.Llewellyn-Jones@cl.cam.ac.uk])
+AC_INIT([pico], [0.0.3], [Frank.Stajano@cl.cam.ac.uk, David.Llewellyn-Jones@cl.cam.ac.uk])
 AC_CONFIG_AUX_DIR([config])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src])

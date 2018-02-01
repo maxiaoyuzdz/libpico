@@ -1,5 +1,5 @@
 Name:           libpico
-Version:        0.0.2
+Version:        0.0.3
 Release:        1%{?dist}
 Summary:        Pico support library
 
@@ -91,6 +91,16 @@ ctest -V %{?_smp_mflags}
 
 
 %changelog
+* Fri Jan 19 2018 David Llewellyn-Jones - 0.0.3-1
+ - New state machines to replace blocking sigmaprover/verifier.
+ - Improved documentation.
+ - JSON parser now supports integers and escape sequences.
+ - New example code included.
+ - Improved configuration of timeout intervals.
+ - Improved logging configuration.
+ - Support comments in users.txt.
+ - Bluetooth is now an optional build dependency.
+
 * Tue Jul 11 2017 David Llewellyn-Jones - 0.0.2-1
 - Add QR code bitmap mode, included double size.
 - Add user timeout mechansim to prevent hanging on suspend.

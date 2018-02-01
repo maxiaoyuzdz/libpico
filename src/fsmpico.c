@@ -409,6 +409,16 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 			fsmpico->comms->setTimeout(MAX((timeout - CONTAUTH_LEEWAY), 0), fsmpico->user_data);
 		}
 		break;
+	case FSMPICOSTATE_PICOREAUTH:
+		result = readMessageServiceReauth(fsmpico, dataread, &timeout, fsmpico->returnedExtraData);
+		if (result) {
+			stateTransition(fsmpico, FSMPICOSTATE_PICOREAUTH);
+			fsmpico->reauthDelay = timeout;
+			LOG(LOG_DEBUG, "Timeout set to: %d", timeout);
+			// Update reauthDelay but keep the previous timeout
+			// TODO assert we are waiting for a timeout?
+		}
+		break;
 	default:
 		stateTransition(fsmpico, FSMPICOSTATE_ERROR);
 		fsmpico->comms->error(fsmpico->user_data);
@@ -580,6 +590,46 @@ void fsmpico_set_outbound_extra_data(FsmPico * fsmpico, Buffer const * extraData
 	}
 }
 
+/**
+ * This functions should be called after fsmpico_set_outbound_extra_data
+ * if the application using FsmPico wants that data to be sent immediately.
+ * This functions only works after continuous authentication has been
+ * established.
+ *
+ * @param fsmpico The object to containing the state
+ * @param buffer Data to be sent
+ *
+ */
+void fsmpico_send_extra_data(FsmPico* fsmpico) {
+	Buffer * message;
+
+	LOG(LOG_DEBUG, "fsmpico_send_extra_data");
+
+	message = buffer_new(0);
+
+	switch (fsmpico->state) {
+	case FSMPICOSTATE_PICOREAUTH:
+		createMessagePicoReauth(fsmpico, message, fsmpico->extraData);
+		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
+		stateTransition(fsmpico, FSMPICOSTATE_SERVICEREAUTH);
+		// set a timeout for awaiting a response
+		fsmpico->comms->setTimeout(fsmpico->reauthDelay + CONTINUOUS_TIMEOUT_LEEWAY, fsmpico->user_data);
+		break;
+	case FSMPICOSTATE_SERVICEREAUTH:
+		createMessagePicoReauth(fsmpico, message, fsmpico->extraData);
+		fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
+		stateTransition(fsmpico, FSMPICOSTATE_SERVICEREAUTH);
+		// Keep the previous timeout waiting for service
+		// TODO assert we are waiting for a timeout?
+		break;
+	default:
+		LOG(LOG_DEBUG, "Sending data during an invalid state");
+		break;
+	}
+
+	buffer_delete(message);
+
+}
 
 void stateTransition(FsmPico* fsmpico, FSMPICOSTATE newState) {
 	fsmpico->state = newState;

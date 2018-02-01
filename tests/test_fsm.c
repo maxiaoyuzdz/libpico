@@ -239,6 +239,7 @@ START_TEST (fsm_fsm_test) {
 	Node* queue = NULL;
 	currentTime = 0;
 	int cycles = 0;
+	int cyclesService = 0;
 	
 	Shared * picoShared = shared_new();
 	shared_load_or_generate_pico_keys(picoShared, "testpicokey.pub", "testpicokey.priv");
@@ -291,12 +292,57 @@ START_TEST (fsm_fsm_test) {
 	}
 
 	void picoStatusUpdate(FSMPICOSTATE state, void * user_data) {
+		Buffer * extraData;
+		extraData = buffer_new(0);
+		// Using this variable, otherwise send_extra_data will call status_update
+		// and we will have a stack overflow
+		static bool sendingReply = false;
+
 		if (state == FSMPICOSTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > 3) {
 				queue = push_stop(queue, pico, NULL, currentTime);
 			}
 		}
+		if (state == FSMPICOSTATE_SERVICEREAUTH && !sendingReply) {
+			if (cycles == 2) {
+				sendingReply = true;
+				ck_assert_str_eq(buffer_get_buffer(fsmpico_get_received_extra_data(pico)), "EXTRA!!");
+				buffer_append_string(extraData, "Extra reply");
+				fsmpico_set_outbound_extra_data(pico, extraData);
+				fsmpico_send_extra_data(pico);
+				fsmpico_set_outbound_extra_data(pico, NULL);
+			} else {
+				ck_assert_str_eq(buffer_get_buffer(fsmpico_get_received_extra_data(pico)), "");
+			}
+		}
+		
+		buffer_delete(extraData);
+	}
+
+	void serviceStatusUpdate(FSMSERVICESTATE state, void * user_data) {
+		Buffer * extraData;
+		extraData = buffer_new(0);
+
+		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
+			cyclesService++;
+			if (cyclesService == 2) {
+				buffer_append_string(extraData, "EXTRA!!");
+				fsmservice_set_outbound_extra_data(serv, extraData);
+				fsmservice_send_extra_data(serv);
+				fsmservice_set_outbound_extra_data(serv, NULL);
+			}
+		}
+		
+		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
+			if (cyclesService == 4) {
+				ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "Extra reply");
+			} else {
+				ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "");
+			}
+		}
+
+		buffer_delete(extraData);
 	}
 
 	void serviceAuthenticated(int status, void * user_data) {
@@ -309,9 +355,11 @@ START_TEST (fsm_fsm_test) {
 		ck_assert(buffer_equals(receivedSymKey, symmetricKey));
 		ck_assert(!strcmp(buffer_get_buffer(user), "Donald"));
 		ck_assert(!strcmp(buffer_get_buffer(extraData), "p@ssword"));
+
+		fsmpico_set_outbound_extra_data(pico, NULL);
 	}
 
-	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, NULL, NULL, serviceDisconnect, serviceAuthenticated, NULL, NULL);
+	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, NULL, NULL, serviceDisconnect, serviceAuthenticated, NULL, serviceStatusUpdate);
 	fsmservice_set_continuous(serv, true);
 	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, NULL, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
 

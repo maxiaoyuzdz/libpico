@@ -120,6 +120,7 @@ DLL_PUBLIC void fsmservice_set_outbound_extra_data(FsmService * fsmservice, Buff
 DLL_PUBLIC void fsmservice_start(FsmService * fsmservice, Shared * shared, Users const * users, Buffer const * extraData);
 DLL_PUBLIC void fsmservice_stop(FsmService * fsmservice);
 DLL_PUBLIC FSMSERVICESTATE fsmservice_get_state(FsmService * fsmservice);
+DLL_PUBLIC void fsmservice_send_extra_data(FsmService * fsmpico);
 
 // Call these functions when an event occurs
 DLL_PUBLIC void fsmservice_read(FsmService * fsmservice, char const * data, size_t length);

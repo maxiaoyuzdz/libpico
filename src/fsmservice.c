@@ -453,6 +453,14 @@ void fsmservice_read(FsmService * fsmservice, char const * data, size_t length) 
 			fsmservice->comms->error(fsmservice->user_data);
 		}
 		break;
+	case FSMSERVICESTATE_SERVICEREAUTH:
+		result = readMessagePicoReauth(fsmservice, dataread, fsmservice->returnedExtraData);
+		if (result) {
+			// Keep same state
+			fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
+			// TODO assert we are waiting for a timeout?
+		}
+		break;
 	default:
 		fsmservice->state = FSMSERVICESTATE_ERROR;
 		fsmservice->comms->error(fsmservice->user_data);
@@ -1012,6 +1020,49 @@ void fsmservice_set_outbound_extra_data(FsmService * fsmservice, Buffer const * 
 		buffer_append_buffer(fsmservice->extraData, extraData);
 	}
 }
+
+/**
+ * This functions should be called after fsmservice_set_outbound_extra_data  when the application 
+ * want to send the data immediately
+ * This functions only works after continuous authentication has been
+ * established.
+ *
+ * @param fsmservice The object containing the state
+ *
+ */
+void fsmservice_send_extra_data(FsmService* fsmservice) {
+	Buffer * message;
+
+	LOG(LOG_DEBUG, "fsmservice_send_extra_data");
+
+	message = buffer_new(0);
+
+	switch (fsmservice->state) {
+	case FSMSERVICESTATE_PICOREAUTH:
+		createMessageServiceReauth(fsmservice, message, fsmservice->currentTimeout, fsmservice->extraData);
+		fsmservice->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmservice->user_data);
+		fsmservice->state = FSMSERVICESTATE_PICOREAUTH;
+		fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
+		// Keep the previous timeout waiting for service
+		// TODO assert we are waiting for a timeout?
+		break;
+	case FSMSERVICESTATE_SERVICEREAUTH:
+		createMessageServiceReauth(fsmservice, message, fsmservice->currentTimeout, fsmservice->extraData);
+		fsmservice->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmservice->user_data);
+		fsmservice->state = FSMSERVICESTATE_PICOREAUTH;
+		fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
+		// set a timeout for awaiting a response
+		fsmservice->comms->setTimeout(fsmservice->currentTimeout, fsmservice->user_data);
+		break;
+	default:
+		LOG(LOG_DEBUG, "Sending data during an invalid state");
+		break;
+	}
+
+	buffer_delete(message);
+
+}
+
 
 /** @} addtogroup Protocol */
 

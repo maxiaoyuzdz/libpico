@@ -93,7 +93,7 @@ TESTS = test_base64$(EXEEXT) test_buffer$(EXEEXT) \
 	test_channel$(EXEEXT) test_json$(EXEEXT) test_users$(EXEEXT) \
 	test_auth$(EXEEXT) test_displayqr$(EXEEXT) \
 	test_continuous$(EXEEXT) test_beacons$(EXEEXT) \
-	test_fsm$(EXEEXT)
+	test_fsm$(EXEEXT) test_messages$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -125,7 +125,7 @@ am__EXEEXT_1 = test_base64$(EXEEXT) test_buffer$(EXEEXT) \
 	test_channel$(EXEEXT) test_json$(EXEEXT) test_users$(EXEEXT) \
 	test_auth$(EXEEXT) test_displayqr$(EXEEXT) \
 	test_continuous$(EXEEXT) test_beacons$(EXEEXT) \
-	test_fsm$(EXEEXT)
+	test_fsm$(EXEEXT) test_messages$(EXEEXT)
 test_auth_SOURCES = test_auth.c
 test_auth_OBJECTS = test_auth.$(OBJEXT)
 test_auth_LDADD = $(LDADD)
@@ -166,6 +166,10 @@ test_json_SOURCES = test_json.c
 test_json_OBJECTS = test_json.$(OBJEXT)
 test_json_LDADD = $(LDADD)
 test_json_DEPENDENCIES = ../libpico.la .libs/lib_mockbt.la
+test_messages_SOURCES = test_messages.c
+test_messages_OBJECTS = test_messages.$(OBJEXT)
+test_messages_LDADD = $(LDADD)
+test_messages_DEPENDENCIES = ../libpico.la .libs/lib_mockbt.la
 test_sigmaverifier_SOURCES = test_sigmaverifier.c
 test_sigmaverifier_OBJECTS = test_sigmaverifier.$(OBJEXT)
 test_sigmaverifier_LDADD = $(LDADD)
@@ -211,11 +215,11 @@ am__v_CCLD_1 =
 SOURCES = $(lib_mockbt_la_SOURCES) test_auth.c test_base64.c \
 	test_beacons.c test_buffer.c test_channel.c test_continuous.c \
 	test_cryptosupport.c test_displayqr.c test_fsm.c test_json.c \
-	test_sigmaverifier.c test_users.c
+	test_messages.c test_sigmaverifier.c test_users.c
 DIST_SOURCES = $(lib_mockbt_la_SOURCES) test_auth.c test_base64.c \
 	test_beacons.c test_buffer.c test_channel.c test_continuous.c \
 	test_cryptosupport.c test_displayqr.c test_fsm.c test_json.c \
-	test_sigmaverifier.c test_users.c
+	test_messages.c test_sigmaverifier.c test_users.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -686,6 +690,10 @@ test_json$(EXEEXT): $(test_json_OBJECTS) $(test_json_DEPENDENCIES) $(EXTRA_test_
 	@rm -f test_json$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_json_OBJECTS) $(test_json_LDADD) $(LIBS)
 
+test_messages$(EXEEXT): $(test_messages_OBJECTS) $(test_messages_DEPENDENCIES) $(EXTRA_test_messages_DEPENDENCIES) 
+	@rm -f test_messages$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_messages_OBJECTS) $(test_messages_LDADD) $(LIBS)
+
 test_sigmaverifier$(EXEEXT): $(test_sigmaverifier_OBJECTS) $(test_sigmaverifier_DEPENDENCIES) $(EXTRA_test_sigmaverifier_DEPENDENCIES) 
 	@rm -f test_sigmaverifier$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_sigmaverifier_OBJECTS) $(test_sigmaverifier_LDADD) $(LIBS)
@@ -712,6 +720,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_displayqr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_fsm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_json.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_messages.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_sigmaverifier.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_users.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mockbt/$(DEPDIR)/lib_mockbt_la-mockbt.Plo@am__quote@
@@ -1027,6 +1036,13 @@ test_beacons.log: test_beacons$(EXEEXT)
 test_fsm.log: test_fsm$(EXEEXT)
 	@p='test_fsm$(EXEEXT)'; \
 	b='test_fsm'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_messages.log: test_messages$(EXEEXT)
+	@p='test_messages$(EXEEXT)'; \
+	b='test_messages'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

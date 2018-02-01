@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-TESTS = test_base64 test_buffer test_cryptosupport test_sigmaverifier test_channel test_json test_users test_auth test_displayqr test_continuous test_beacons test_fsm
+TESTS = test_base64 test_buffer test_cryptosupport test_sigmaverifier test_channel test_json test_users test_auth test_displayqr test_continuous test_beacons test_fsm test_messages
 
 noinst_LTLIBRARIES   = lib_mockbt.la
 lib_mockbt_la_SOURCES = \

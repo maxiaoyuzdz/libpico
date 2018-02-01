@@ -83,6 +83,7 @@ struct _MessageServiceReAuth {
 
 	Buffer * iv;
 	Buffer * encryptedData;
+	Buffer * extraData;
 };
 
 // Function prototypes
@@ -108,6 +109,7 @@ MessageServiceReAuth * messageservicereauth_new() {
 
 	messageservicereauth->iv = buffer_new(0);
 	messageservicereauth->encryptedData = buffer_new(0);
+	messageservicereauth->extraData = buffer_new(0);
 
 	return messageservicereauth;
 }
@@ -133,6 +135,8 @@ void messageservicereauth_delete(MessageServiceReAuth * messageservicereauth) {
 		if (messageservicereauth->encryptedData) {
 			buffer_delete(messageservicereauth->encryptedData);
 		}
+
+		buffer_delete(messageservicereauth->extraData);
 
 		FREE(messageservicereauth);
 	}
@@ -161,6 +165,15 @@ void messageservicereauth_set(MessageServiceReAuth * messageservicereauth, Buffe
 	if (sequenceNum) {
 		sequencenumber_copy(messageservicereauth->sequenceNum, sequenceNum);
 	}
+}
+
+void messageservicereauth_set_extra_data(MessageServiceReAuth * messageservicereauth, Buffer * extraData) {
+	buffer_clear(messageservicereauth->extraData);
+	buffer_append_buffer(messageservicereauth->extraData, extraData);
+}
+
+const Buffer * messageservicereauth_get_extra_data(MessageServiceReAuth * messageservicereauth) {
+	return messageservicereauth->extraData;
 }
 
 /**
@@ -196,6 +209,9 @@ void messageservicereauth_serialize(MessageServiceReAuth * messageservicereauth,
 
 	// Sequence number
 	buffer_append_lengthprepend(toEncrypt, sequencenumber_get_raw_bytes(messageservicereauth->sequenceNum), SEQUENCE_NUMBER_LENGTH);
+	
+	// Extra data
+	buffer_append_buffer_lengthprepend(toEncrypt, messageservicereauth->extraData);
 
 	iv = buffer_new(CRYPTOSUPPORT_IV_SIZE);
 	cryptosupport_generate_iv(iv);
@@ -348,6 +364,19 @@ bool messageservicereauth_deserialize(MessageServiceReAuth * messageservicereaut
 		else {
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended challenge sequence number data\n");
 			result = false;
+		}
+		
+		// length | char extraData[length] (optional)
+		buffer_clear(bytes);
+		next = buffer_copy_lengthprepend(cleartext, start, bytes);
+		length = buffer_get_pos(bytes);
+		if (next > start) {
+			buffer_clear(messageservicereauth->extraData);
+			buffer_append_buffer(messageservicereauth->extraData, bytes);
+			start = next;
+		}
+		else {
+			LOG(LOG_DEBUG, "Service reauth message without extra data\n");
 		}
 	}
 	

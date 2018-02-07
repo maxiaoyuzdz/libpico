@@ -64,6 +64,10 @@ sudo dpkg -i ../libpico1_0.0.2-1_amd64.deb
 sudo dpkg -i ../libpico1-dev_0.0.2-1_amd64.deb
 ```
 
+## Using libpico
+
+For info about how to use libpico in your own programmes, see the [developer documentation](https://docs.mypico.org/developer/libpico/).
+
 ## License
 
 Libpico is released under the AGPL licence. Read COPYING for information.

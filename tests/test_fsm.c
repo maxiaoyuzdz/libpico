@@ -317,11 +317,7 @@ START_TEST (fsm_fsm_test) {
 
 	// We have to duplicate the objects because fsmpico tries to delete them later
 	cryptosupport_getprivateder(picoIdSKey, picoIdDer);
-	fsmpico_start(pico, 
-		picoExtraData, 
-		EC_KEY_dup(servIdPKey),
-		EC_KEY_dup(picoIdPKey),
-		cryptosupport_read_buffer_private_key(picoIdDer));
+	fsmpico_start(pico, picoExtraData, EC_KEY_dup(servIdPKey), EC_KEY_dup(picoIdPKey), cryptosupport_read_buffer_private_key(picoIdDer));
 	fsmservice_start(serv, servShared, users, servExtraData);
 
 	// To kick start we have to "connect" both sides
@@ -740,7 +736,6 @@ int main (void) {
 
 	s = suite_create("Libpico");
 
-	// Base64 test case
 	tc = tcase_create("FSM");
 	tcase_add_test(tc, fsm_fsm_test);
 	tcase_add_test(tc, fsm_pico_test);

@@ -429,14 +429,16 @@ bool messageserviceauth_deserialize(MessageServiceAuth * messageserviceauth, Buf
 			result = false;
 		}
 	}
-	shared_generate_shared_secrets_pico(messageserviceauth->shared);
+	if (result) {
+		shared_generate_shared_secrets_pico(messageserviceauth->shared);
+	}
 	cleartext = buffer_new(0);
 	if (result) {
 		vEncKey = shared_get_verifier_enc_key(messageserviceauth->shared);
 		result = cryptosupport_decrypt(vEncKey, messageserviceauth->iv, messageserviceauth->encryptedData, cleartext);
 	}
+	start = 0;
 	if (result) {
-		start = 0;
 		next = buffer_copy_lengthprepend(cleartext, start, servicePublicKeyBytes);
 		if (next > start) {
 			serviceIdentityPublicKey = cryptosupport_read_buffer_public_key(servicePublicKeyBytes);
@@ -447,6 +449,8 @@ bool messageserviceauth_deserialize(MessageServiceAuth * messageserviceauth, Buf
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended servicePublicKeyBytes data\n");
 			result = false;
 		}
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messageserviceauth->signature);
 		if (next > start) {
 			start = next;
@@ -455,6 +459,8 @@ bool messageserviceauth_deserialize(MessageServiceAuth * messageserviceauth, Buf
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended signature data\n");
 			result = false;
 		}
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messageserviceauth->mac);
 		if (next > start) {
 			start = next;

@@ -243,8 +243,8 @@ bool messagepicoauth_deserialize(MessagePicoAuth * messagepicoauth, Buffer * buf
 		result = cryptosupport_decrypt(pEncKey, messagepicoauth->iv, messagepicoauth->encryptedData, cleartext);
 	}
 
+	start = 0;
 	if (result) {
-		start = 0;
 		next = buffer_copy_lengthprepend(cleartext, start, picoPublicKeyBytes);
 		if (next > start) {
 			picoIdentityPublicKey = cryptosupport_read_buffer_public_key(picoPublicKeyBytes);
@@ -255,7 +255,8 @@ bool messagepicoauth_deserialize(MessagePicoAuth * messagepicoauth, Buffer * buf
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended picoPublicKeyBytes data\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messagepicoauth->signature);
 		if (next > start) {
 			start = next;
@@ -264,7 +265,8 @@ bool messagepicoauth_deserialize(MessagePicoAuth * messagepicoauth, Buffer * buf
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended signature data\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messagepicoauth->mac);
 		if (next > start) {
 			start = next;
@@ -273,7 +275,8 @@ bool messagepicoauth_deserialize(MessagePicoAuth * messagepicoauth, Buffer * buf
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended mac data\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messagepicoauth->extraData);
 		if (next > start) {
 			start = next;

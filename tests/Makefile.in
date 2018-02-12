@@ -92,7 +92,8 @@ TESTS = test_base64$(EXEEXT) test_buffer$(EXEEXT) \
 	test_cryptosupport$(EXEEXT) test_sigmaverifier$(EXEEXT) \
 	test_channel$(EXEEXT) test_json$(EXEEXT) test_users$(EXEEXT) \
 	test_auth$(EXEEXT) test_displayqr$(EXEEXT) \
-	test_continuous$(EXEEXT) test_beacons$(EXEEXT)
+	test_continuous$(EXEEXT) test_beacons$(EXEEXT) \
+	test_fsm$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -123,7 +124,8 @@ am__EXEEXT_1 = test_base64$(EXEEXT) test_buffer$(EXEEXT) \
 	test_cryptosupport$(EXEEXT) test_sigmaverifier$(EXEEXT) \
 	test_channel$(EXEEXT) test_json$(EXEEXT) test_users$(EXEEXT) \
 	test_auth$(EXEEXT) test_displayqr$(EXEEXT) \
-	test_continuous$(EXEEXT) test_beacons$(EXEEXT)
+	test_continuous$(EXEEXT) test_beacons$(EXEEXT) \
+	test_fsm$(EXEEXT)
 test_auth_SOURCES = test_auth.c
 test_auth_OBJECTS = test_auth.$(OBJEXT)
 test_auth_LDADD = $(LDADD)
@@ -156,6 +158,10 @@ test_displayqr_SOURCES = test_displayqr.c
 test_displayqr_OBJECTS = test_displayqr.$(OBJEXT)
 test_displayqr_LDADD = $(LDADD)
 test_displayqr_DEPENDENCIES = ../libpico.la .libs/lib_mockbt.la
+test_fsm_SOURCES = test_fsm.c
+test_fsm_OBJECTS = test_fsm.$(OBJEXT)
+test_fsm_LDADD = $(LDADD)
+test_fsm_DEPENDENCIES = ../libpico.la .libs/lib_mockbt.la
 test_json_SOURCES = test_json.c
 test_json_OBJECTS = test_json.$(OBJEXT)
 test_json_LDADD = $(LDADD)
@@ -204,11 +210,11 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(lib_mockbt_la_SOURCES) test_auth.c test_base64.c \
 	test_beacons.c test_buffer.c test_channel.c test_continuous.c \
-	test_cryptosupport.c test_displayqr.c test_json.c \
+	test_cryptosupport.c test_displayqr.c test_fsm.c test_json.c \
 	test_sigmaverifier.c test_users.c
 DIST_SOURCES = $(lib_mockbt_la_SOURCES) test_auth.c test_base64.c \
 	test_beacons.c test_buffer.c test_channel.c test_continuous.c \
-	test_cryptosupport.c test_displayqr.c test_json.c \
+	test_cryptosupport.c test_displayqr.c test_fsm.c test_json.c \
 	test_sigmaverifier.c test_users.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -672,6 +678,10 @@ test_displayqr$(EXEEXT): $(test_displayqr_OBJECTS) $(test_displayqr_DEPENDENCIES
 	@rm -f test_displayqr$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_displayqr_OBJECTS) $(test_displayqr_LDADD) $(LIBS)
 
+test_fsm$(EXEEXT): $(test_fsm_OBJECTS) $(test_fsm_DEPENDENCIES) $(EXTRA_test_fsm_DEPENDENCIES) 
+	@rm -f test_fsm$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_fsm_OBJECTS) $(test_fsm_LDADD) $(LIBS)
+
 test_json$(EXEEXT): $(test_json_OBJECTS) $(test_json_DEPENDENCIES) $(EXTRA_test_json_DEPENDENCIES) 
 	@rm -f test_json$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_json_OBJECTS) $(test_json_LDADD) $(LIBS)
@@ -700,6 +710,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_continuous.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_cryptosupport.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_displayqr.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_fsm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_json.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_sigmaverifier.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_users.Po@am__quote@
@@ -1009,6 +1020,13 @@ test_continuous.log: test_continuous$(EXEEXT)
 test_beacons.log: test_beacons$(EXEEXT)
 	@p='test_beacons$(EXEEXT)'; \
 	b='test_beacons'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_fsm.log: test_fsm$(EXEEXT)
+	@p='test_fsm$(EXEEXT)'; \
+	b='test_fsm'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

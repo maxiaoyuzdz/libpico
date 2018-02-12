@@ -57,6 +57,8 @@
 #ifndef __FSMPICO_H
 #define __FSMPICO_H (1)
 
+#include "pico/fsm.h"
+
 // Defines
 
 // Structure definitions
@@ -93,15 +95,6 @@ typedef enum _FSMPICOSTATE {
  * The internal structure can be found in fsmpico.c
  */
 typedef struct _FsmPico FsmPico;
-
-typedef void (*FsmWrite)(char const * data, size_t length, void * user_data);
-typedef void (*FsmSetTimeout)(int timeout, void * user_data);
-typedef void (*FsmError)(void * user_data);
-typedef void (*FsmReconnect)(void * user_data);
-typedef void (*FsmDisconnect)(void * user_data);
-typedef void (*FsmAuthenticated)(int status, void * user_data);
-typedef void (*FsmSessionEnded)(void * user_data);
-typedef void (*FsmStatusUpdate)(FSMPICOSTATE state, void * user_data);
 
 // Function prototypes
 

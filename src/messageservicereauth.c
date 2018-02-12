@@ -123,20 +123,28 @@ void messageservicereauth_delete(MessageServiceReAuth * messageservicereauth) {
 	if (messageservicereauth) {
 		if (messageservicereauth->sharedKey) {
 			buffer_delete(messageservicereauth->sharedKey);
+			messageservicereauth->sharedKey = NULL;
 		}
 
 		if (messageservicereauth->sequenceNum) {
 			sequencenumber_delete(messageservicereauth->sequenceNum);
+			messageservicereauth->sequenceNum = NULL;
 		}
 
 		if (messageservicereauth->iv) {
 			buffer_delete(messageservicereauth->iv);
-		}
-		if (messageservicereauth->encryptedData) {
-			buffer_delete(messageservicereauth->encryptedData);
+			messageservicereauth->iv = NULL;
 		}
 
-		buffer_delete(messageservicereauth->extraData);
+		if (messageservicereauth->encryptedData) {
+			buffer_delete(messageservicereauth->encryptedData);
+			messageservicereauth->encryptedData = NULL;
+		}
+		
+		if (messageservicereauth->extraData) {
+			buffer_delete(messageservicereauth->extraData);
+			messageservicereauth->extraData = NULL;
+		}
 
 		FREE(messageservicereauth);
 	}

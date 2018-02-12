@@ -94,11 +94,11 @@ void * pico_main(void * thread_data) {
 	
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
-    ck_assert_int_eq(timeout, 1500);
+	ck_assert_int_eq(timeout, 1500);
 
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
-    ck_assert_int_eq(timeout, 1500);
+	ck_assert_int_eq(timeout, 1500);
 	
 	continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_STOP);

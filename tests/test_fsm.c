@@ -1,7 +1,7 @@
 /**
  * @file
  * @author cd611@cam.ac.uk 
- * @version 1.0
+ * @version $(VERSION)
  *
  * @section LICENSE
  *
@@ -187,49 +187,49 @@ void push_stop(Queue* queue, FsmPico* pico, FsmService* service, int currentTime
 	return push_event(queue, e);
 }
 
-void process_event(Event* e) {
-	bool isService = e->service != NULL;
-	bool isPico = e->pico != NULL;
+void process_event(Event event) {
+	bool isService = event.service != NULL;
+	bool isPico = event.pico != NULL;
 
 	ck_assert(isService != isPico);
 
-	switch (e->type) {
+	switch (event.type) {
 	case READ:
 		if (isService) {
-			fsmservice_read(e->service, e->data, e->data_len);
+			fsmservice_read(event.service, event.data, event.data_len);
 		} else {
-			fsmpico_read(e->pico, e->data, e->data_len);
+			fsmpico_read(event.pico, event.data, event.data_len);
 		}
 		break;
 
 	case CONNECTED:
 		if (isService) {
-			fsmservice_connected(e->service);
+			fsmservice_connected(event.service);
 		} else {
-			fsmpico_connected(e->pico);
+			fsmpico_connected(event.pico);
 		}
 		break;
 
 	case DISCONNECTED:
 		if (isService) {
-			fsmservice_disconnected(e->service);
+			fsmservice_disconnected(event.service);
 		} else {
-			fsmpico_disconnected(e->pico);
+			fsmpico_disconnected(event.pico);
 		}
 		break;
 
 	case TIMEOUT:
 		if (isService) {
-			fsmservice_timeout(e->service);
+			fsmservice_timeout(event.service);
 		} else {
-			fsmpico_timeout(e->pico);
+			fsmpico_timeout(event.pico);
 		}
 		break;
 	case STOP:
 		if (isService) {
-			fsmservice_stop(e->service);
+			fsmservice_stop(event.service);
 		} else {
-			fsmpico_stop(e->pico);
+			fsmpico_stop(event.pico);
 		}
 		break;
 	case STOP_LOOP:
@@ -381,7 +381,7 @@ START_TEST (fsm_fsm_test) {
 		Node* head = queue.head;
 		queue.head = head->next;
 		currentTime = head->event.time;
-		process_event(&head->event);
+		process_event(head->event);
 		free(head);
 	}
 
@@ -422,7 +422,7 @@ void * event_loop_thread(void * arg) {
 				free(head);
 				break;
 			}
-			process_event(&head->event);
+			process_event(head->event);
 			free(head);
 		} else {
 		   pthread_mutex_unlock(&queue_mutex);

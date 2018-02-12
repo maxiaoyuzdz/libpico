@@ -1,7 +1,7 @@
 Name:           libpico
-Version:        0.0.2
+Version:        0.0.3
 Release:        1%{?dist}
-Summary:        Pico support library
+Summary:        Pico authentication runtime shared library
 
 License:        Pico Copyright 2017
 URL:            https://mypico.org
@@ -24,18 +24,16 @@ Requires:       openssl-libs
 Requires:       bluez5-libs
 
 %description
-Provides functionality useful for creating Pico applications. Both client 
- and server-side support are provided.
-
+Pico authentication library and header files for developing
+ Pico applications. Both client and server-side support are provided.
 
 %package        devel
-Summary:        Development files for %{name}
+Summary:        Pico authentication development files
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description    devel
-The %{name}-devel package contains libraries and header files for
-developing applications that use %{name}.
-
+Pico authenticationo runtime library providing functionality needed by
+ Pico applications. Both client and server-side support are provided.
 
 %prep
 %setup -q
@@ -91,6 +89,16 @@ ctest -V %{?_smp_mflags}
 
 
 %changelog
+* Fri Jan 19 2018 David Llewellyn-Jones - 0.0.3-1
+ - New state machines to replace blocking sigmaprover/verifier.
+ - Improved documentation.
+ - JSON parser now supports integers and escape sequences.
+ - New example code included.
+ - Improved configuration of timeout intervals.
+ - Improved logging configuration.
+ - Support comments in users.txt.
+ - Bluetooth is now an optional build dependency.
+
 * Tue Jul 11 2017 David Llewellyn-Jones - 0.0.2-1
 - Add QR code bitmap mode, included double size.
 - Add user timeout mechansim to prevent hanging on suspend.

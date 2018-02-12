@@ -26,7 +26,7 @@
  *
  * @section DESCRIPTION
  *
- * The sigmaverifier function performs the service's (verifier's) half of the
+ * The sigmaprover function performs the pico's (prover's) half of the
  * Sigma-I protocol over the Rendezvous Point channel provided.
  * 
  */

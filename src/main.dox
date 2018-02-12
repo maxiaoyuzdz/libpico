@@ -37,7 +37,7 @@ Here we show how you can build it at the command line, but `cmake` will also pro
 Open a Visual Studio command shell and then you can use the following sequence of commands to build the library.
 
 \verbatim
-git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+git clone git@github.com:mypico/libpico.git
 call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" amd64
 cd libpico
 git submodule update --init
@@ -60,8 +60,9 @@ Before installing libpico you should decide whether you want the runtime, or dev
 The easiest way to install libpico is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
 
 \verbatim
-sudo add-apt-repository ppa:mypico/ppa
-sudo apt-get update
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 22991E96
+sudo add-apt-repository "deb https://get.mypico.org/apt/ xenial main"
+sudo apt update
 \endverbatim
 
 Then install the libpico runtime using the following commands. As well as libpico, this will also automatically install all of its dependencies.
@@ -77,13 +78,13 @@ If you don't want to add the Pico PPA, you can also download the latest package 
  - libcurl3
  - libqrencode3
  - libbluetooth3, version 4.91 or later
- - libc6, version 2.14 or later
  - liburl-dispatcher1
+ - libc6, version 2.14 or later
 
 See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run. Apart from this, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
 
 \verbatim
-sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 libc6 liburl-dispatcher1
+sudo apt install libssl1.0.0 libcurl3 libqrencode3 libbluetooth3 liburl-dispatcher1 libc6
 \endverbatim
 
 Then use the following to install libpico:
@@ -97,8 +98,9 @@ sudo dpkg -i libpico1_$(VERSION)-1_amd64.deb
 The easiest way to install the libpico developer files is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
 
 \verbatim
-sudo add-apt-repository ppa:mypico/ppa
-sudo apt-get update
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 22991E96
+sudo add-apt-repository "deb https://get.mypico.org/apt/ xenial main"
+sudo apt update
 \endverbatim
 
 Then install the libpico developer files using the following commands. As well as libpico, this will also automatically install all of its dependencies.
@@ -112,16 +114,17 @@ If you don't want to add the Pico PPA, you can also download the latest package 
 To build on Linux you'll need the following (at least):
  - libpicobt-dev, version 0.0.1 or later
  - libpicobt-run, version 0.0.1 or later
+ - libssl-dev
  - libcurl4-openssl-dev
  - libqrencode-dev
- - libssl-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
+ - libc6, version 2.14 or later
 
 See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run and libpicobt-dev. Apart from these, on Ubuntu 16.04 the remainder of these dependencies can be installed as follows.
 
 \verbatim
-sudo apt install libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev
+sudo apt install libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6
 \endverbatim
 
 Then use the following to install libpico:
@@ -136,19 +139,25 @@ sudo dpkg -i libpico1-dev_$(VERSION)-1_amd64.deb
 To build on Linux you'll need the following (at least):
  - libpicobt-dev, version 0.0.1 or later
  - libpicobt-run, version 0.0.1 or later
+ - libssl-dev
  - libcurl4-openssl-dev
  - libqrencode-dev
- - libssl-dev
  - libbluetooth-dev, version 4.91 or later
  - liburl-dispatcher1-dev
+ - libc6, version 2.14 or later
+ - autoconf
+ - pkg-config
+ - autotools-dev
+ - automake
+ - devscripts
+ - debhelper
+ - dh-systemd
+ - dh-exec
+ - build-essential
  - git
  - gcc
  - make
  - check
- - pkg-config
- - autotools-dev
- - devscripts
- - debhelper
  - openssh-client
  - doxygen
  - graphviz
@@ -157,15 +166,15 @@ See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run
 
 \verbatim
 sudo apt install \
-  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev \
-  pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec \
-  git gcc make check openssh-client doxygen graphviz
+  libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
+  autoconf pkg-config autotools-dev automake devscripts debhelper dh-systemd dh-exec \
+  build-essential git gcc make check openssh-client doxygen graphviz
 \endverbatim
 
 Now grab yourself a copy of the code from the repository and compile the libraries.
 
 \verbatim
-git clone git@gitlab.dtg.cl.cam.ac.uk:pico/libpico.git
+git clone git@github.com:mypico/libpico.git
 cd libpico
 ./configure
 make

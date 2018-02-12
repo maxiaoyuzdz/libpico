@@ -304,10 +304,10 @@ bool messageservicereauth_deserialize(MessageServiceReAuth * messageservicereaut
 
 	bytes = buffer_new(0);
 
+	start = 0;
 	if (result) {
 		// char reauthState | int timeout | length | char sequenceNumber[length]
 		length = buffer_get_pos(cleartext);
-		start = 0;
 
 		// char reauthState
 		next = start + sizeof(char);
@@ -319,7 +319,8 @@ bool messageservicereauth_deserialize(MessageServiceReAuth * messageservicereaut
 			LOG(LOG_ERR, "Error deserializing decrypted reauth state data\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		// int timeout
 		next = start + sizeof(int);
 		if ((next > start) && (next < length)) {
@@ -336,7 +337,8 @@ bool messageservicereauth_deserialize(MessageServiceReAuth * messageservicereaut
 			LOG(LOG_ERR, "Error deserializing decrypted reauth timeout\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		// length | char sequenceNumber[length]
 		buffer_clear(bytes);
 		next = buffer_copy_lengthprepend(cleartext, start, bytes);

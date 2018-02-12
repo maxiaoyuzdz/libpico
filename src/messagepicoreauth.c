@@ -271,9 +271,9 @@ bool messagepicoreauth_deserialize(MessagePicoReAuth * messagepicoreauth, Buffer
 
 	bytes = buffer_new(0);
 
+	start = 0;
 	if (result) {
 		length = buffer_get_pos(cleartext);
-		start = 0;
 		next = start + sizeof(char);
 		if ((next > start) && (next <= length)) {
 			messagepicoreauth->reauthState = buffer_get_buffer(cleartext)[0];
@@ -285,7 +285,8 @@ bool messagepicoreauth_deserialize(MessagePicoReAuth * messagepicoreauth, Buffer
 			messagepicoreauth->reauthState = MESSAGESTATUS_ERROR;
 			result = false;
 		}
-
+	}
+	if (result) {
 		buffer_clear(bytes);
 		next = buffer_copy_lengthprepend(cleartext, start, bytes);
 		length = buffer_get_pos(bytes);
@@ -297,7 +298,8 @@ bool messagepicoreauth_deserialize(MessagePicoReAuth * messagepicoreauth, Buffer
 			LOG(LOG_ERR, "Error deserializing decrypted length-prepended challenge sequence number data\n");
 			result = false;
 		}
-
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messagepicoreauth->extraData);
 		if (next > start) {
 			start = next;

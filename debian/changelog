@@ -1,3 +1,16 @@
+libpico1 (0.0.3-1) unstable; urgency=low
+
+  * New state machines to replace blocking sigmaprover/verifier.
+  * Improved documentation.
+  * JSON parser now supports integers and escape sequences.
+  * New example code included.
+  * Improved configuration of timeout intervals.
+  * Improved logging configuration.
+  * Support comments in users.txt.
+  * Bluetooth is now an optional build dependency.
+
+ -- David Llewellyn-Jones <David.Llewellyn-Jones@cl.cam.ac.uk>  Fri, 19 Jan 2018 14:04:05 +0000
+
 libpico1 (0.0.2-1) unstable; urgency=low
 
   * Add QR code bitmap mode, included double size.

@@ -70,6 +70,10 @@ typedef struct node_st {
 	Event event;
 } Node;
 
+typedef struct queue_st {
+	Node* head;
+} Queue;
+
 // Function prototypes
 
 // Global variables
@@ -78,25 +82,25 @@ pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 // Function definitions
-Node* push_event(Node* queue_head, Event event) {
+void push_event(Queue* queue, Event event) {
 	bool isService = event.service != NULL;
 	bool isPico = event.pico != NULL;
 
 	ck_assert(isService != isPico);
 	
 	pthread_mutex_lock(&queue_mutex);
-	Node* ret = NULL;
+	Node* queue_head = queue->head;
 	if (queue_head == NULL) {
 		Node* newNode = malloc(sizeof(Node));
 		newNode->next = NULL;
 		newNode->event = event;
-		ret = newNode;
+		queue->head = newNode;
 	} else {
 		if (event.time < queue_head->event.time) {
 			Node* newNode = malloc(sizeof(Node));
 			newNode->next = queue_head;
 			newNode->event = event;
-			ret = newNode;
+			queue->head = newNode;
 		} else {
 			Node* previousNode = queue_head;
 			Node* currentNode = queue_head->next;
@@ -108,15 +112,14 @@ Node* push_event(Node* queue_head, Event event) {
 			newNode->next = currentNode;
 			newNode->event = event;
 			previousNode->next = newNode; 
-			ret =  queue_head;
+			queue->head = queue_head;
 		}
 	}
-	
+
 	pthread_mutex_unlock(&queue_mutex);
-	return ret;
 }
 	   
-Node* push_read(Node* queue, FsmPico* pico, FsmService* service, int currentTime, const char* data, int length) {
+void push_read(Queue* queue, FsmPico* pico, FsmService* service, int currentTime, const char* data, int length) {
 	Event e;
 	e.type = READ;
 	e.service = service;
@@ -124,30 +127,31 @@ Node* push_read(Node* queue, FsmPico* pico, FsmService* service, int currentTime
 	e.time = currentTime;
 	memcpy(e.data, data, length);
 	e.data_len = length;
-	return push_event(queue, e);
+	push_event(queue, e);
 }
 
-Node* push_connected(Node* queue, FsmPico* pico, FsmService* service, int currentTime) {
+void push_connected(Queue* queue, FsmPico* pico, FsmService* service, int currentTime) {
 	Event e;
 	e.type = CONNECTED;
 	e.service = service;
 	e.pico = pico;
 	e.time = currentTime;
-	return push_event(queue, e);
+	push_event(queue, e);
 }
 
-Node* push_disconnected(Node* queue, FsmPico* pico, FsmService* service, int currentTime){
+void push_disconnected(Queue* queue, FsmPico* pico, FsmService* service, int currentTime){
 	Event e;
 	e.type = DISCONNECTED;
 	e.service = service;
 	e.pico = pico;
 	e.time = currentTime;
-	return push_event(queue, e);
+	push_event(queue, e);
 }
 	
-Node* push_timeout(Node* queue, FsmPico* pico, FsmService* service, int currentTime, int timeout) {
+void push_timeout(Queue* queue, FsmPico* pico, FsmService* service, int currentTime, int timeout) {
 	// Look for some previous timeout comming from the same service/pico
-	Node* ptr = queue;
+	pthread_mutex_lock(&queue_mutex);
+	Node* ptr = queue->head;
 	Node* prev = NULL;
 	while (ptr != NULL && (ptr->event.type != TIMEOUT || ptr->event.service != service || ptr->event.pico != pico)) {
 		prev = ptr;
@@ -156,13 +160,14 @@ Node* push_timeout(Node* queue, FsmPico* pico, FsmService* service, int currentT
 	if (ptr != NULL) {
 		// Found some timeout. So remove it
 		if (prev == NULL) {
-			ck_assert(ptr == queue);
-			queue = ptr->next;
+			ck_assert(ptr == queue->head);
+			queue->head = ptr->next;
 		} else {
 			prev->next = ptr->next;
 		}
 		free(ptr);
 	}
+	pthread_mutex_unlock(&queue_mutex);
 
 	// Add the new timeout
 	Event e;
@@ -170,10 +175,10 @@ Node* push_timeout(Node* queue, FsmPico* pico, FsmService* service, int currentT
 	e.service = service;
 	e.pico = pico;
 	e.time = currentTime + timeout;
-	return push_event(queue, e);
+	push_event(queue, e);
 }
 
-Node* push_stop(Node* queue, FsmPico* pico, FsmService* service, int currentTime){
+void push_stop(Queue* queue, FsmPico* pico, FsmService* service, int currentTime){
 	Event e;
 	e.type = STOP;
 	e.service = service;
@@ -236,7 +241,7 @@ void process_event(Event event) {
 START_TEST (fsm_fsm_test) {
 	FsmService* serv = fsmservice_new();
 	FsmPico* pico = fsmpico_new();
-	Node* queue = NULL;
+	Queue queue = {NULL};
 	currentTime = 0;
 	int cycles = 0;
 	
@@ -262,39 +267,39 @@ START_TEST (fsm_fsm_test) {
 	bool calledAuthenticated = false;
 
 	void serviceWrite(char const * data, size_t length, void * user_data){
-		queue = push_read(queue, pico, NULL, currentTime, data, length);
+		push_read(&queue, pico, NULL, currentTime, data, length);
 	}
 
 	void serviceSetTimeout(int timeout, void * user_data) {
-		queue = push_timeout(queue, NULL, serv, currentTime, timeout);
+		push_timeout(&queue, NULL, serv, currentTime, timeout);
 	}
 
 	void serviceDisconnect(void * user_data){
-		queue = push_disconnected(queue, pico, NULL, currentTime);
+		push_disconnected(&queue, pico, NULL, currentTime);
 	}
 
 	void picoWrite(char const * data, size_t length, void * user_data) {
-		queue = push_read(queue, NULL, serv, currentTime, data, length);
+		push_read(&queue, NULL, serv, currentTime, data, length);
 	}
 
 	void picoSetTimeout(int timeout, void * user_data) {
-		queue = push_timeout(queue, pico, NULL, currentTime, timeout);
+		push_timeout(&queue, pico, NULL, currentTime, timeout);
 	}
 
 	void picoReconnect(void * user_data) {
-		queue = push_connected(queue, pico, NULL, currentTime);
-		queue = push_connected(queue, NULL, serv, currentTime);
+		push_connected(&queue, pico, NULL, currentTime);
+		push_connected(&queue, NULL, serv, currentTime);
 	}
 
 	void picoDisconnect(void * user_data) {
-		queue = push_disconnected(queue, NULL, serv, currentTime);
+		push_disconnected(&queue, NULL, serv, currentTime);
 	}
 
 	void picoStatusUpdate(FSMPICOSTATE state, void * user_data) {
 		if (state == FSMPICOSTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > 3) {
-				queue = push_stop(queue, pico, NULL, currentTime);
+				push_stop(&queue, pico, NULL, currentTime);
 			}
 		}
 	}
@@ -321,12 +326,12 @@ START_TEST (fsm_fsm_test) {
 	fsmservice_start(serv, servShared, users, servExtraData);
 
 	// To kick start we have to "connect" both sides
-	queue = push_connected(queue, NULL, serv, currentTime);
-	queue = push_connected(queue, pico, NULL, currentTime);
+	push_connected(&queue, NULL, serv, currentTime);
+	push_connected(&queue, pico, NULL, currentTime);
 
-	while (queue != NULL) {
-		Node* head = queue;
-		queue = queue->next;
+	while (queue.head != NULL) {
+		Node* head = queue.head;
+		queue.head = head->next;
 		currentTime = head->event.time;
 		process_event(head->event);
 		free(head);
@@ -347,26 +352,25 @@ START_TEST (fsm_fsm_test) {
 }
 END_TEST
 
-void * event_loop_thread(void * node_ptr_ptr) {
-	Node** queuePtr = (Node**) node_ptr_ptr;
+void * event_loop_thread(void * arg) {
+	Queue* queuePtr = (Queue*) arg;
    
 	while(true) {
 		pthread_mutex_lock(&queue_mutex);
-		Node* queue = *queuePtr;
-		if (queue != NULL) {
-			while (queue->event.type == TIMEOUT && queue->event.time > currentTime) {
+		Node* head = queuePtr->head;
+		if (head != NULL) {
+			while (head->event.type == TIMEOUT && head->event.time > currentTime) {
 				// Wait a little bit so the other thread can synchronize
 				currentTime += 100;
 				pthread_mutex_unlock(&queue_mutex);
 				sleep(0.01);
 				pthread_mutex_lock(&queue_mutex);
-				queue = *queuePtr;
+				head = queuePtr->head;
 			}
-			Node* head = *queuePtr;
-			*queuePtr = (*queuePtr)->next;
+			queuePtr->head = head->next;
 			currentTime = head->event.time;
 			pthread_mutex_unlock(&queue_mutex);
-			if (queue->event.type == STOP_LOOP) {
+			if (head->event.type == STOP_LOOP) {
 				free(head);
 				break;
 			}
@@ -383,7 +387,7 @@ void * event_loop_thread(void * node_ptr_ptr) {
 
 START_TEST (fsm_pico_test) {
 	FsmPico* pico = fsmpico_new();
-	Node* queue = NULL;
+	Queue queue = {NULL};
 	currentTime = 0;
 	sem_t read_semaphore;
 	sem_t connect_semaphore;
@@ -417,11 +421,11 @@ START_TEST (fsm_pico_test) {
 
 	bool channelOpen(RVPChannel * channel) {
 		sem_wait(&connect_semaphore);
-		queue = push_connected(queue, pico, NULL, currentTime);
+		push_connected(&queue, pico, NULL, currentTime);
 		return true;
 	}
 	bool channelClose(RVPChannel * channel) {
-		queue = push_disconnected(queue, pico, NULL, currentTime);
+		push_disconnected(&queue, pico, NULL, currentTime);
 		return true;
 	}
 	bool channelWrite(RVPChannel * channel, char * data, int length) {
@@ -431,7 +435,7 @@ START_TEST (fsm_pico_test) {
 		receivedLength |= ((unsigned char*) data)[2] << 8;
 		receivedLength |= ((unsigned char*) data)[3] << 0;
 		ck_assert_int_eq(length - 4 , receivedLength);
-		queue = push_read(queue, pico, NULL, currentTime, data + 4, length - 4);
+		push_read(&queue, pico, NULL, currentTime, data + 4, length - 4);
 		return true;
 	}
 	bool channelRead(RVPChannel * channel, Buffer * buffer) {
@@ -458,7 +462,7 @@ START_TEST (fsm_pico_test) {
 
 	void picoSetTimeout(int timeout, void * user_data) {
 		ck_assert_int_eq(timeout, 10000);
-		queue = push_timeout(queue, pico, NULL, currentTime, timeout);
+		push_timeout(&queue, pico, NULL, currentTime, timeout);
 	}
 
 	void picoReconnect(void * user_data) {
@@ -472,7 +476,7 @@ START_TEST (fsm_pico_test) {
 		if (state == FSMPICOSTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > 3) {
-				queue = push_stop(queue, pico, NULL, currentTime);
+				push_stop(&queue, pico, NULL, currentTime);
 				
 				pthread_mutex_lock(&global_data_mutex);
 				global_data_len = -1;
@@ -533,7 +537,8 @@ START_TEST (fsm_pico_test) {
 	e.type = STOP_LOOP;
 	e.service = NULL;
 	e.pico = pico;
-	queue = push_event(queue, e);
+	e.time = currentTime;
+	push_event(&queue, e);
 	pthread_join(prover_td, NULL);
 
 	buffer_delete(returnedExtraData);
@@ -553,7 +558,7 @@ END_TEST
 
 START_TEST (fsm_service_test) {
 	FsmService* serv = fsmservice_new();
-	Node* queue = NULL;
+	Queue queue = {NULL};
 	currentTime = 0;
 	sem_t read_semaphore;
 	sem_t authenticated_semaphore;
@@ -588,11 +593,11 @@ START_TEST (fsm_service_test) {
 	int cycles = 0;
 
 	bool channelOpen(RVPChannel * channel) {
-		queue = push_connected(queue, NULL, serv, currentTime);
+		push_connected(&queue, NULL, serv, currentTime);
 		return true;
 	}
 	bool channelClose(RVPChannel * channel) {
-		queue = push_disconnected(queue, NULL, serv, currentTime);
+		push_disconnected(&queue, NULL, serv, currentTime);
 		return true;
 	}
 	bool channelWrite(RVPChannel * channel, char * data, int length) {
@@ -602,7 +607,7 @@ START_TEST (fsm_service_test) {
 		receivedLength |= ((unsigned char*) data)[2] << 8;
 		receivedLength |= ((unsigned char*) data)[3] << 0;
 		ck_assert_int_eq(length - 4 , receivedLength);
-		queue = push_read(queue, NULL, serv, currentTime, data + 4, length - 4);
+		push_read(&queue, NULL, serv, currentTime, data + 4, length - 4);
 		return true;
 	}
 	bool channelRead(RVPChannel * channel, Buffer * buffer) {
@@ -628,11 +633,11 @@ START_TEST (fsm_service_test) {
 	}
 
 	void serviceSetTimeout(int timeout, void * user_data) {
-		queue = push_timeout(queue, NULL, serv, currentTime, timeout);
+		push_timeout(&queue, NULL, serv, currentTime, timeout);
 	}
 
 	void serviceDisconnect(void * user_data){
-		queue = push_disconnected(queue, NULL, serv, currentTime);
+		push_disconnected(&queue, NULL, serv, currentTime);
 	}
 	
 	void serviceAuthenticated(int status, void * user_data) {
@@ -652,7 +657,7 @@ START_TEST (fsm_service_test) {
 		if (state == FSMSERVICESTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > 3) {
-				queue = push_stop(queue, NULL, serv, currentTime);
+				push_stop(&queue, NULL, serv, currentTime);
 				sem_post(&stop_semaphore);
 			}
 		}
@@ -701,7 +706,8 @@ START_TEST (fsm_service_test) {
 	e.type = STOP_LOOP;
 	e.service = serv;
 	e.pico = NULL;
-	queue = push_event(queue, e);
+	e.time = currentTime;
+	push_event(&queue, e);
 	pthread_join(prover_td, NULL);
 
 	ck_assert_int_eq(cycles, 4);

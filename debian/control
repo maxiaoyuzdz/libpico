@@ -12,14 +12,14 @@ Package: libpico1-dev
 Section: libdevel
 Architecture: any
 Depends: libpico1 (= ${binary:Version}), libpicobt-dev (>= 0.0.1), libpicobt-run (>= 0.0.1), ${misc:Depends}, libssl-dev, libcurl4-openssl-dev, libqrencode-dev
-Description: Pico support library
- Provides functionality useful for creating Pico applications. Both client 
- and server-side support are provided.
+Description: Pico authentication development files
+ Pico authentication library and header files for developing
+ Pico applications. Both client and server-side support are provided.
 
 Package: libpico1
 Architecture: any
 Depends: libpicobt-run (>= 0.0.1), ${shlibs:Depends}, ${misc:Depends}, libssl1.0.0, libcurl3, libqrencode3
-Description: Pico support library
- Provides functionality useful for creating Pico applications. Both client 
- and server-side support are provided.
+Description: Pico authentication runtime shared library
+ Pico authenticationo runtime library providing functionality needed by
+ Pico applications. Both client and server-side support are provided.
 

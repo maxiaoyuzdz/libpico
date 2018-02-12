@@ -460,8 +460,17 @@ START_TEST (fsm_pico_test) {
 		sem_post(&read_semaphore);
 	}
 
+	int expectedTimeouts[] = {
+		10000, //Reconnect delay
+		9000, // Continuous timeout
+		9000, // Continuous timeout
+		9000, // Continuous timeout
+		9000 // Continuous timeout
+	};
+
 	void picoSetTimeout(int timeout, void * user_data) {
-		ck_assert_int_eq(timeout, 10000);
+		static int i = 0;
+		ck_assert_int_eq(expectedTimeouts[i++], timeout);
 		push_timeout(&queue, pico, NULL, currentTime, timeout);
 	}
 

@@ -91,7 +91,6 @@
 // Defines
 
 #define CONTAUTH_TIMEOUT (5000)
-#define CONTAUTH_LEEWAY (1000)
 #define RECONNECT_DELAY (10000)
 #define AUTHENTICATION_TIME_LIMIT (5000)
 
@@ -181,6 +180,8 @@ FsmService * fsmservice_new() {
 	fsmservice->picoSeqNumber = sequencenumber_new();
 	fsmservice->serviceSeqNumber = sequencenumber_new();
 	fsmservice->sharedKey = buffer_new(0);
+
+	fsmservice->currentTimeout = CONTAUTH_TIMEOUT;
 
 	fsmservice->state = FSMSERVICESTATE_INVALID;
 	fsmservice->user = buffer_new(0);
@@ -506,7 +507,7 @@ void fsmservice_connected(FsmService * fsmservice) {
 
 		fsmservice->state = FSMSERVICESTATE_CONTSTARTPICO;
 		fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
-		fsmservice->comms->setTimeout((CONTAUTH_TIMEOUT + CONTAUTH_LEEWAY), fsmservice->user_data);
+		fsmservice->comms->setTimeout((fsmservice->currentTimeout), fsmservice->user_data);
 		break;
 	default:
 		fsmservice->state = FSMSERVICESTATE_ERROR;
@@ -533,7 +534,7 @@ void fsmservice_disconnected(FsmService * fsmservice) {
 			fsmservice->state = FSMSERVICESTATE_CONTSTARTSERVICE;
 			fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
 			fsmservice->comms->listen(fsmservice->user_data);
-			fsmservice->comms->setTimeout((RECONNECT_DELAY + CONTAUTH_TIMEOUT + CONTAUTH_LEEWAY), fsmservice->user_data);
+			fsmservice->comms->setTimeout((RECONNECT_DELAY + fsmservice->currentTimeout), fsmservice->user_data);
 		}
 		else {
 			fsmservice->comms->authenticated(MESSAGESTATUS_OK_DONE, fsmservice->user_data);
@@ -578,11 +579,11 @@ void fsmservice_timeout(FsmService * fsmservice) {
 		fsmservice->comms->sessionEnded(fsmservice->user_data);
 		break;
 	case FSMSERVICESTATE_SERVICEREAUTH:
-		createMessageServiceReauth(fsmservice, message, CONTAUTH_TIMEOUT);
+		createMessageServiceReauth(fsmservice, message, fsmservice->currentTimeout);
 		fsmservice->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmservice->user_data);
 		fsmservice->state = FSMSERVICESTATE_PICOREAUTH;
 		fsmservice->comms->statusUpdate(fsmservice->state, fsmservice->user_data);
-		fsmservice->comms->setTimeout((CONTAUTH_TIMEOUT + CONTAUTH_LEEWAY), fsmservice->user_data);
+		fsmservice->comms->setTimeout(fsmservice->currentTimeout, fsmservice->user_data);
 		break;
 	case FSMSERVICESTATE_AUTHENTICATED:
 	case FSMSERVICESTATE_AUTHFAILED:
@@ -769,7 +770,7 @@ static void createMessageServiceReauth(FsmService * fsmservice, Buffer * message
 	LOG(LOG_DEBUG, "Send MessageServiceReauth");
 
 	messageservicereauth = messageservicereauth_new();
-	messageservicereauth_set(messageservicereauth, fsmservice->sharedKey, fsmservice->currentTimeout, fsmservice->currentState, fsmservice->serviceSeqNumber);
+	messageservicereauth_set(messageservicereauth, fsmservice->sharedKey, timeout, fsmservice->currentState, fsmservice->serviceSeqNumber);
 	messageservicereauth_serialize(messageservicereauth, message);
 
 	// Increment the sequence number ready for the next message

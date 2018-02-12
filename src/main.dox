@@ -60,8 +60,9 @@ Before installing libpico you should decide whether you want the runtime, or dev
 The easiest way to install libpico is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
 
 \verbatim
-sudo add-apt-repository ppa:mypico/ppa
-sudo apt-get update
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 22991E96
+sudo add-apt-repository "deb https://get.mypico.org/apt/ xenial main"
+sudo apt update
 \endverbatim
 
 Then install the libpico runtime using the following commands. As well as libpico, this will also automatically install all of its dependencies.
@@ -97,8 +98,9 @@ sudo dpkg -i libpico1_$(VERSION)-1_amd64.deb
 The easiest way to install the libpico developer files is directly from the Pico PPA. Enter the following commands to add the PPA to your system:
 
 \verbatim
-sudo add-apt-repository ppa:mypico/ppa
-sudo apt-get update
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 22991E96
+sudo add-apt-repository "deb https://get.mypico.org/apt/ xenial main"
+sudo apt update
 \endverbatim
 
 Then install the libpico developer files using the following commands. As well as libpico, this will also automatically install all of its dependencies.
@@ -146,6 +148,7 @@ To build on Linux you'll need the following (at least):
  - autoconf
  - pkg-config
  - autotools-dev
+ - automake
  - devscripts
  - debhelper
  - dh-systemd
@@ -164,8 +167,8 @@ See the [libpicobt](../libpicobt) documentation for how to install libpicobt-run
 \verbatim
 sudo apt install \
   libssl-dev libcurl4-openssl-dev libqrencode-dev libbluetooth-dev liburl-dispatcher1-dev libc6 \
-  autoconf pkg-config autotools-dev devscripts debhelper dh-systemd dh-exec build-essential \
-  git gcc make check openssh-client doxygen graphviz
+  autoconf pkg-config autotools-dev automake devscripts debhelper dh-systemd dh-exec \
+  build-essential git gcc make check openssh-client doxygen graphviz
 \endverbatim
 
 Now grab yourself a copy of the code from the repository and compile the libraries.

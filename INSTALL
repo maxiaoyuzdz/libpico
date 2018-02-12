@@ -109,8 +109,8 @@ sb2 -t SailfishOS-i486 -m sdk-install -R
 
 # 8. Install the package built
 
-rpm -Uvh --force libpico-0.0.2-1.i486.rpm
-rpm -Uvh --force libpico-devel-0.0.2-1.i486.rpm
+rpm -Uvh --force libpico-0.0.3-1.i486.rpm
+rpm -Uvh --force libpico-devel-0.0.3-1.i486.rpm
 
 # 9. Logout from the chroot
 
@@ -137,7 +137,7 @@ rpm -e libpico
 
 # 15. Install the packages
 
-rpm -i libpico-0.0.2-1.i486.rpm
+rpm -i libpico-0.0.3-1.i486.rpm
 
 # Rinse and repeat for the armv7hl version.
 

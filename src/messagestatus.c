@@ -273,9 +273,9 @@ bool messagestatus_deserialize(MessageStatus * messagestatus, Buffer const * buf
 		result = cryptosupport_decrypt(pEncKey, iv, encryptedData, cleartext);
 	}
 
+	start = 0;
 	if (result) {
 		length = buffer_get_pos(cleartext);
-		start = 0;
 		next = start + sizeof(char);
 		if ((next > start) && (next <= length)) {
 			messagestatus->status = buffer_get_buffer(cleartext)[0];
@@ -287,7 +287,8 @@ bool messagestatus_deserialize(MessageStatus * messagestatus, Buffer const * buf
 			messagestatus->status = MESSAGESTATUS_ERROR;
 			result = false;
 		}
-
+	}
+	if (result) {
 		next = buffer_copy_lengthprepend(cleartext, start, messagestatus->extraData);
 		if (next > start) {
 			start = next;

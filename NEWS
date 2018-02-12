@@ -1,3 +1,13 @@
+libpico-0.0.3-1: 19-Jan-2018
+  - New state machines to replace blocking sigmaprover/verifier.
+  - Improved documentation.
+  - JSON parser now supports integers and escape sequences.
+  - New example code included.
+  - Improved configuration of timeout intervals.
+  - Improved logging configuration.
+  - Support comments in users.txt.
+  - Bluetooth is now an optional build dependency.
+
 libpico-0.0.2-1: 11-Jul-2017
   - Add QR code bitmap mode, included double size.
   - Add user timeout mechansim to prevent hanging on suspend.
@@ -19,6 +29,7 @@ libpico-0.0.2-1: 11-Jul-2017
   - New feedback/progress interface.
   - Static analysis using cpp-check added to build process.
   - Remove dependency on pico-remove.
+
 libpico-0.0.1-1: 3-Nov-2016
   - Support multiple connection cycles.
 

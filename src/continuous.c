@@ -840,7 +840,9 @@ bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, i
  * successfully (e.g. someone tried unsuccessfully to imitate the Pico).
  *
  * @param continuous The continuous prover object.
- * @param returnedStoredData If not NULL, is appended with a string
+ * @param extraData The extra data to send to the Pico, or NULL for none
+ * @param returnedStoredData A buffer to store the extra data sent back by the
+ *        Pico
  *        containing data returned from Pico.
  * @return true if authentication completed successfully, false o/w.
  */
@@ -881,10 +883,12 @@ bool continuous_finish(Continuous * continuous) {
  * the Server).
  *
  * @param continuous The continuous prover object.
- * @param extraData If not NULL, is sent to the server.
+ * @param extraData The extra data to send to the service, or NULL for none
  * @param timeout returns the timeout value sent by the server, measured in
  *        milliseconds. The server value defaults toCONTINUOUS_TIMEOUT_ACTIVE
  *        (set in messageservicereauth.h to 10000ms = 10s).
+ * @param returnedStoredData A buffer to store the extra data sent back by the
+ *        service
  * @return true if authentication completed successfully. false o/w.
  */
 bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData) {

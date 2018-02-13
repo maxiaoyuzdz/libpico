@@ -84,23 +84,23 @@ void * pico_main(void * thread_data) {
 	continuous_set_shared_key(continuous, sharedkey);
 	continuous_set_custom_timeout_leeway(continuous, 500);
 
-	continuous_cycle_start_pico(continuous, NULL);
+	continuous_cycle_start_pico(continuous, NULL, NULL);
 
-	continuous_reauth_pico(continuous, NULL, NULL);
+	continuous_reauth_pico(continuous, NULL, NULL, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
 	
-	bool result = continuous_continue_pico(continuous, NULL, NULL);
+	bool result = continuous_continue_pico(continuous, NULL, NULL, NULL);
 	ck_assert(result);
 	
-	continuous_reauth_pico(continuous, NULL, &timeout);
+	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
 	ck_assert_int_eq(timeout, 1500);
 
-	continuous_reauth_pico(continuous, NULL, &timeout);
+	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
 	ck_assert_int_eq(timeout, 1500);
 	
-	continuous_reauth_pico(continuous, NULL, &timeout);
+	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_STOP);
     ck_assert_int_eq(timeout, 0);
 
@@ -141,26 +141,26 @@ START_TEST (continuous_test) {
 	pthread_t pico_td;
 	pthread_create(&pico_td, NULL, pico_main, &thread_data);
 
-    continuous_set_custom_timeout(continuous, 2000, 2000);
-	bool result = continuous_cycle_start(continuous);
+	continuous_set_custom_timeout(continuous, 2000, 2000);
+	bool result = continuous_cycle_start(continuous, NULL, NULL);
 	ck_assert(result);
 
-	continuous_reauth(continuous, NULL);
+	continuous_reauth(continuous, NULL, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
 	
-	result = continuous_continue(continuous, NULL);
+	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(result);
 
 	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_PAUSE);
+	continuous_update_state(continuous, REAUTHSTATE_PAUSE, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
 
 	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_CONTINUE);
+	continuous_update_state(continuous, REAUTHSTATE_CONTINUE, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
 	
 	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_STOP);
+	continuous_update_state(continuous, REAUTHSTATE_STOP, NULL);
 
 	continuous_finish(continuous);
 

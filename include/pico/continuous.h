@@ -72,16 +72,16 @@ DLL_PUBLIC void continuous_set_service_sequence_number(Continuous * continuous, 
 DLL_PUBLIC REAUTHSTATE continuous_get_state(Continuous * continuous);
 
 DLL_PUBLIC bool continuous_start(Continuous * continuous, Shared * shared, Users * authorizedUsers, Buffer * returnedStoredData, QrCallbackFunction qrCallback, void * data, Buffer * localSymmetricKey);
-DLL_PUBLIC bool continuous_cycle_start(Continuous * continuous);
-DLL_PUBLIC bool continuous_cycle_start_pico(Continuous * continuous, Buffer * extraData);
+DLL_PUBLIC bool continuous_cycle_start(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_cycle_start_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
 DLL_PUBLIC bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, Buffer * returnedStoredData);
-DLL_PUBLIC bool continuous_write_pico_reauth(Continuous * continuous, Buffer * extraData);
-DLL_PUBLIC bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout);
-DLL_PUBLIC bool continuous_write_service_reauth(Continuous * continuous);
-DLL_PUBLIC bool continuous_update_state(Continuous * continuous, REAUTHSTATE new_state);
-DLL_PUBLIC bool continuous_reauth(Continuous * continuous, Buffer * returnedStoredData);
-DLL_PUBLIC bool continuous_reauth_pico(Continuous * continuous, Buffer * extraData, int * timeout);
-DLL_PUBLIC bool continuous_continue(Continuous * continuous, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_write_pico_reauth(Continuous * continuous, Buffer const * extraData);
+DLL_PUBLIC bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_write_service_reauth(Continuous * continuous, Buffer const * extraData);
+DLL_PUBLIC bool continuous_update_state(Continuous * continuous, REAUTHSTATE new_state, Buffer const * extraData);
+DLL_PUBLIC bool continuous_reauth(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_continue(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
 DLL_PUBLIC bool continuous_finish(Continuous * continuous);
 
 DLL_PUBLIC void continuous_set_custom_timeout(Continuous * continuous, int timeout_active, int timeout_paused);
@@ -92,7 +92,7 @@ DLL_PUBLIC void continuous_get_shared_key(Continuous * continuous, Buffer * shar
 DLL_PUBLIC void continuous_set_channel(Continuous * continuous, RVPChannel * channel);
 DLL_PUBLIC RVPChannel * continuous_get_channel(Continuous * continuous);
 
-DLL_PUBLIC bool continuous_continue_pico(Continuous * continuous, Buffer * extraData, int * timeout);
+DLL_PUBLIC bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData);
 
 // Function definitions
 

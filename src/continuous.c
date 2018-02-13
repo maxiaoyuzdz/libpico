@@ -409,9 +409,12 @@ bool continuous_start(Continuous * continuous, Shared * shared, Users * authoriz
  * call to continuous_continue().
  *
  * @param continuous The continuous prover object.
+ * @param extraData The extra data to send to the Pico, or NULL for none
+ * @param returnedStoredData A buffer to store the extra data sent back by the
+ *        Pico
  * @return true if everything was successfully set up.
  */
-bool continuous_cycle_start(Continuous * continuous) {
+bool continuous_cycle_start(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData) {
 	bool result;
 	SequenceNumber * sequenceNum;
 	REAUTHSTATE receivedState = REAUTHSTATE_INVALID;
@@ -423,7 +426,7 @@ bool continuous_cycle_start(Continuous * continuous) {
 	if (result) {
 		LOG(LOG_INFO, "First read, allowing default timeout");
 		channel_set_timeout(continuous->channel, DEFAULT_CONTINUOUS_TIMEOUT_ACTIVE);
-		result = continuous_read_pico_reauth(continuous, sequenceNum, NULL);
+		result = continuous_read_pico_reauth(continuous, sequenceNum, returnedStoredData);
 		receivedState = continuous->currentState;
 	}
 
@@ -436,7 +439,7 @@ bool continuous_cycle_start(Continuous * continuous) {
 		sequencenumber_increment(sequenceNum);
 		continuous_set_pico_sequence_number(continuous, sequenceNum);
 		continuous_set_current_state(continuous, receivedState);
-		result = continuous_write_service_reauth(continuous);
+		result = continuous_write_service_reauth(continuous, extraData);
 	}
 
 	sequencenumber_delete(sequenceNum);
@@ -451,9 +454,12 @@ bool continuous_cycle_start(Continuous * continuous) {
  * call to continuous_continue_pico().
  *
  * @param continuous The continuous prover object.
+ * @param extraData The extra data to send to the service, or NULL for none
+ * @param returnedStoredData A buffer to store the extra data sent back by the
+ *        service
  * @return true if everything was successfully set up.
  */
-bool continuous_cycle_start_pico(Continuous * continuous, Buffer * extraData) {
+bool continuous_cycle_start_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData) {
 	bool result;
 	SequenceNumber * sequenceNum;
 
@@ -471,7 +477,7 @@ bool continuous_cycle_start_pico(Continuous * continuous, Buffer * extraData) {
 	if (result) {
 		sequenceNum = sequencenumber_new();
 
-		result = continuous_read_service_reauth(continuous, sequenceNum, NULL);
+		result = continuous_read_service_reauth(continuous, sequenceNum, NULL, returnedStoredData);
 
 		// Increment and store the sequence number received from the Service
 		sequencenumber_increment(sequenceNum);
@@ -568,7 +574,7 @@ bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * seque
  * @param extraData The extra data to send to the service (or NULL for none).
  * @return True if we could send the message correctly
 */
-bool continuous_write_pico_reauth(Continuous * continuous, Buffer * extraData) {
+bool continuous_write_pico_reauth(Continuous * continuous, Buffer const * extraData) {
 	bool result;
 	Buffer * buffer;
 	MessagePicoReAuth * messagepicoreauth;
@@ -620,12 +626,13 @@ bool continuous_write_pico_reauth(Continuous * continuous, Buffer * extraData) {
  * @param returnedStoredData A buffer to store any returned extraData into.
  * @return True if the message was read correctly.
 */
-bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout) {
+bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout, Buffer * returnedStoredData) {
 	bool result;
 	bool sequencenumber_match;
 	Buffer * buffer;
 	MessageServiceReAuth * messageservicereauth;
 	SequenceNumber * sequenceNum;
+	Buffer const * extraData;
 
 	buffer = buffer_new(0);
 	sequenceNum = sequencenumber_new();
@@ -672,6 +679,12 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
 
 	if (result && sequencenumber_match) {
 		sequencenumber_increment(continuous->serviceSeqNumber);
+
+		if (returnedStoredData != NULL) {
+			extraData = messageservicereauth_get_extra_data(messageservicereauth);
+			buffer_clear(returnedStoredData);
+			buffer_append_buffer(returnedStoredData, extraData);
+		}
 	} else {
 		continuous_set_current_state(continuous, REAUTHSTATE_ERROR);
 	}
@@ -689,9 +702,10 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
  * If successful, the sequence number will be incremented.
  *
  * @param continuous The continuous structure holding the context.
+ * @param extraData The extra data to send to the Pico, or NULL for none
  * @return True if we could send the message correctly.
 */
-bool continuous_write_service_reauth(Continuous * continuous) {
+bool continuous_write_service_reauth(Continuous * continuous, Buffer const * extraData) {
 	bool result;
 	Buffer * buffer;
 	MessageServiceReAuth * messageservicereauth;
@@ -703,6 +717,9 @@ bool continuous_write_service_reauth(Continuous * continuous) {
 	// {"encryptedData":"B64-ENC","iv":"B64","sessionId":0}
 	messageservicereauth = messageservicereauth_new();
 	messageservicereauth_set(messageservicereauth, continuous->sharedKey, continuous->currentTimeout, continuous->currentState, continuous->serviceSeqNumber);
+	if (extraData != NULL) {
+		messageservicereauth_set_extra_data(messageservicereauth, extraData);
+	}
 
 	messageservicereauth_serialize(messageservicereauth, buffer);
 
@@ -736,16 +753,17 @@ bool continuous_write_service_reauth(Continuous * continuous) {
  * @param continuous The continuous structure holding the context.
  * @param newState The new state to attempt to transition to (if different
  *        from the current state).
+ * @param extraData The extra data to send with the new state, or NULL for none
  * @return True if we could send the message correctly.
  */
-bool continuous_update_state(Continuous * continuous, REAUTHSTATE newState) {
+bool continuous_update_state(Continuous * continuous, REAUTHSTATE newState, Buffer const * extraData) {
 	bool result = true; 
 
 	newState = continuous_transition(continuous->currentState, newState);
 
 	if (continuous->currentState != newState) {
 		continuous_set_current_state(continuous, newState);
-		result = continuous_write_service_reauth(continuous);
+		result = continuous_write_service_reauth(continuous, extraData);
 	}
 
 	return result;
@@ -758,11 +776,12 @@ bool continuous_update_state(Continuous * continuous, REAUTHSTATE newState) {
  * It will return the current status, as returned by Pico.
  *
  * @param continuous The continuous prover object.
+ * @param extraData The extra data to send to the Pico, or NULL for none
  * @param returnedStoredData If not NULL, is appended with a string
  *        containing data returned from Pico.
  * @return True if the authentication was successful.
  */
-bool continuous_reauth(Continuous * continuous, Buffer * returnedStoredData) {
+bool continuous_reauth(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData) {
 	bool result;
 
 	LOG(LOG_INFO, "Starting read %d", continuous->currentTimeout);
@@ -774,7 +793,7 @@ bool continuous_reauth(Continuous * continuous, Buffer * returnedStoredData) {
 	}
 	
 	if (result) {
-		result = continuous_write_service_reauth(continuous);
+		result = continuous_write_service_reauth(continuous, extraData);
 	}
 
 	return result;
@@ -786,12 +805,18 @@ bool continuous_reauth(Continuous * continuous, Buffer * returnedStoredData) {
  *
  * It will return the current status, as returned by the service.
  *
+ * The timeout should be used as a deadline within which the Pico must
+ * respond to the service. If the service doesn't hear back within this time,
+ * it will assume the Pico is no longer coninuously communicating with it.
+ *
  * @param continuous The continuous prover object.
+ * @param extraData The extra data to send to the Pico, or NULL for none
+ * @param timeout An integer to store the timeout returned by the service
  * @param returnedStoredData If not NULL, is appended with a string
  *        containing data returned from Pico.
  * @return True if the authentication was successful.
  */
-bool continuous_reauth_pico(Continuous * continuous, Buffer * extraData, int * timeout) {
+bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData) {
 	bool result;
 
 	result = continuous_write_pico_reauth(continuous, extraData);
@@ -801,7 +826,7 @@ bool continuous_reauth_pico(Continuous * continuous, Buffer * extraData, int * t
 	}
 
 	if (result) {
-		result = continuous_read_service_reauth(continuous, NULL, timeout);
+		result = continuous_read_service_reauth(continuous, NULL, timeout, returnedStoredData);
 	}
 
 	return result;
@@ -819,11 +844,11 @@ bool continuous_reauth_pico(Continuous * continuous, Buffer * extraData, int * t
  *        containing data returned from Pico.
  * @return true if authentication completed successfully, false o/w.
  */
-bool continuous_continue(Continuous * continuous, Buffer * returnedStoredData) {
+bool continuous_continue(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData) {
 	bool result;
 	REAUTHSTATE receivedState = REAUTHSTATE_INVALID;
 
-	result = continuous_reauth(continuous, returnedStoredData);
+	result = continuous_reauth(continuous, extraData, returnedStoredData);
 	if (result) {
 		receivedState = continuous->currentState;
 	}
@@ -862,11 +887,11 @@ bool continuous_finish(Continuous * continuous) {
  *        (set in messageservicereauth.h to 10000ms = 10s).
  * @return true if authentication completed successfully. false o/w.
  */
-bool continuous_continue_pico(Continuous * continuous, Buffer * extraData, int * timeout) {
+bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData) {
 	bool result;
 	REAUTHSTATE receivedState = REAUTHSTATE_INVALID;
 
-	result = continuous_reauth_pico(continuous, extraData, timeout);
+	result = continuous_reauth_pico(continuous, extraData, timeout, returnedStoredData);
 
 	if (result) {
 		receivedState = continuous->currentState;

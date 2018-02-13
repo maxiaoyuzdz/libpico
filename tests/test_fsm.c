@@ -512,17 +512,18 @@ START_TEST (fsm_pico_test) {
 		5000, // Read timeout for ServiceAuthMessage
 		5000, // Read timeout for StatusMessage
 		10000, //Reconnect delay
-		9000, // Continuous timeout
+		11000, // Continuous timeout
 		11000, // Read timeout for ServiceReauthMessage
-		9000, // Continuous timeout
+		11000, // Continuous timeout
 		11000, // Read timeout for ServiceReauthMessage
-		9000, // Continuous timeout
+		11000, // Continuous timeout
 		11000, // Read timeout for ServiceReauthMessage
-		9000 // Continuous timeout
+		11000 // Continuous timeout
 	};
 
 	void picoSetTimeout(int timeout, void * user_data) {
 		static int i = 0;
+		fprintf(stderr, "Timeout: %d, expected: %d\n", timeout, expectedTimeouts[i]);
 		ck_assert_int_eq(expectedTimeouts[i++], timeout);
 		push_timeout(&queue, pico, NULL, currentTime, timeout);
 	}
@@ -578,19 +579,19 @@ START_TEST (fsm_pico_test) {
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, shared_get_shared_key(servShared));
 	
-	result = continuous_cycle_start(continuous);
+	result = continuous_cycle_start(continuous, NULL, NULL);
 	ck_assert(result);
 
-	result = continuous_continue(continuous, NULL);
+	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(result);
 	
-	result = continuous_continue(continuous, NULL);
+	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(result);
   
-	result = continuous_continue(continuous, NULL);
+	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(result);
  
-	result = continuous_continue(continuous, NULL);
+	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(!result);
 	
 	ck_assert(cycles == 4);
@@ -748,17 +749,17 @@ START_TEST (fsm_service_test) {
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, shared_get_shared_key(servShared));
    
-	result = continuous_cycle_start_pico(continuous, NULL);
+	result = continuous_cycle_start_pico(continuous, NULL, NULL);
 	ck_assert(result);
 
 	int timeout = 0;
-	result = continuous_reauth_pico(continuous, NULL, &timeout);
+	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(result);
 	
-	result = continuous_reauth_pico(continuous, NULL, &timeout);
+	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(result);
   
-	result = continuous_reauth_pico(continuous, NULL, &timeout);
+	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
 	ck_assert(result);
 
 	// Wait for the other thread to complete the cycles before stopping the loop

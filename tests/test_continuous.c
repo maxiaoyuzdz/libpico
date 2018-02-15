@@ -47,6 +47,77 @@ typedef struct {
 
 // Function definitions
 
+static char const * const pico_data[] = {"one", "two", NULL, "four", NULL, "six", "seven"};
+static char const * const service_data[] = {"ten", "eleven", NULL, NULL, "fourteen", "fifteen", "sixteen"};
+static int pico_data_pos_sent;
+static int pico_data_pos_received;
+static int service_data_pos_sent;
+static int service_data_pos_received;
+
+Buffer const * pico_update_extradata(Buffer * extraData) {
+	Buffer const * extraDataOrNull;
+
+	ck_assert(pico_data_pos_sent < 7);
+	buffer_clear(extraData);
+	if (pico_data[pico_data_pos_sent] != NULL) {
+		buffer_append_string(extraData, pico_data[pico_data_pos_sent]);
+		extraDataOrNull = extraData;
+	}
+	else {
+		extraDataOrNull = NULL;
+	}
+	pico_data_pos_sent++;
+
+	return extraDataOrNull;
+}
+
+void pico_check_extradata(Buffer const * returnedStoredData) {
+	char const * data;
+
+	data = buffer_get_buffer(returnedStoredData);
+
+	ck_assert(pico_data_pos_received < 7);
+	if (service_data[pico_data_pos_received] != NULL) {
+		ck_assert_str_eq(data, service_data[pico_data_pos_received]);
+	}
+	else {
+		ck_assert_str_eq(data, "");
+	}
+	pico_data_pos_received++;
+}
+
+Buffer const * service_update_extradata(Buffer * extraData) {
+	Buffer const * extraDataOrNull;
+
+	ck_assert(service_data_pos_sent < 7);
+	buffer_clear(extraData);
+	if (service_data[service_data_pos_sent] != NULL) {
+		buffer_append_string(extraData, service_data[service_data_pos_sent]);
+		extraDataOrNull = extraData;
+	}
+	else {
+		extraDataOrNull = NULL;
+	}
+	service_data_pos_sent++;
+
+	return extraDataOrNull;
+}
+
+void service_check_extradata(Buffer const * returnedStoredData) {
+	char const * data;
+	
+	data = buffer_get_buffer(returnedStoredData);
+
+	ck_assert(service_data_pos_received < 7);
+	if (pico_data[service_data_pos_received] != NULL) {
+		ck_assert_str_eq(data, pico_data[service_data_pos_received]);
+	}
+	else {
+		ck_assert_str_eq(data, "");
+	}
+	service_data_pos_received++;
+}
+
 START_TEST (continuous_constructor_test) {
 	RVPChannel * channel = channel_new();
 	Continuous * continuous = continuous_new();
@@ -74,7 +145,16 @@ END_TEST
 void * pico_main(void * thread_data) {
 	sleep(0.5);
 	PicoThreadData * data = (PicoThreadData*) thread_data;
-    int timeout;
+	int timeout;
+	Buffer * extraData;
+	Buffer * returnedStoredData;
+	Buffer const * extraDataOrNull;
+
+	extraData = buffer_new(0);
+	returnedStoredData = buffer_new(0);
+
+	pico_data_pos_sent = 0;
+	pico_data_pos_received = 0;
 
 	Buffer * sharedkey = buffer_new(0);
 	buffer_append(sharedkey, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", 16);
@@ -84,25 +164,37 @@ void * pico_main(void * thread_data) {
 	continuous_set_shared_key(continuous, sharedkey);
 	continuous_set_custom_timeout_leeway(continuous, 500);
 
-	continuous_cycle_start_pico(continuous, NULL, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	continuous_cycle_start_pico(continuous, extraDataOrNull, returnedStoredData);
+	pico_check_extradata(returnedStoredData);
 
-	continuous_reauth_pico(continuous, NULL, NULL, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, NULL);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
+	pico_check_extradata(returnedStoredData);
 	
-	bool result = continuous_continue_pico(continuous, NULL, NULL, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	bool result = continuous_continue_pico(continuous, extraDataOrNull, returnedStoredData, NULL);
 	ck_assert(result);
+	pico_check_extradata(returnedStoredData);
 	
-	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
 	ck_assert_int_eq(timeout, 1500);
+	pico_check_extradata(returnedStoredData);
 
-	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
 	ck_assert_int_eq(timeout, 1500);
+	pico_check_extradata(returnedStoredData);
 	
-	continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	extraDataOrNull = pico_update_extradata(extraData);
+	continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_STOP);
-    ck_assert_int_eq(timeout, 0);
+	ck_assert_int_eq(timeout, 0);
+	pico_check_extradata(returnedStoredData);
 
 	continuous_finish(continuous);
 
@@ -120,14 +212,23 @@ void get_allocated_channel_name(char const * channel_url_const, char * out) {
 	free(channel_url);
 }
 
-
 START_TEST (continuous_test) {
 	PicoThreadData thread_data;
 	RVPChannel * channel = channel_new();
 	Continuous * continuous = continuous_new();
 	Buffer * channel_buffer = buffer_new(0);
 	Buffer * sharedkey = buffer_new(0);
+	Buffer * extraData;
+	Buffer * returnedStoredData;
+	Buffer const * extraDataOrNull;
+
 	buffer_append(sharedkey, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f", 16);
+
+	extraData = buffer_new(0);
+	returnedStoredData = buffer_new(0);
+
+	service_data_pos_sent = 0;
+	service_data_pos_received = 0;
 
 	ck_assert(channel != NULL);
 	continuous_set_channel(continuous, channel);
@@ -141,26 +242,38 @@ START_TEST (continuous_test) {
 	pthread_t pico_td;
 	pthread_create(&pico_td, NULL, pico_main, &thread_data);
 
+	extraDataOrNull = service_update_extradata(extraData);
 	continuous_set_custom_timeout(continuous, 2000, 2000);
-	bool result = continuous_cycle_start(continuous, NULL, NULL);
+	bool result = continuous_cycle_start(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
+	service_check_extradata(returnedStoredData);
 
-	continuous_reauth(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData);
+	continuous_reauth(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
+	service_check_extradata(returnedStoredData);
 	
-	result = continuous_continue(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData);
+	result = continuous_continue(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
+	service_check_extradata(returnedStoredData);
 
-	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_PAUSE, NULL);
+	extraDataOrNull = service_update_extradata(extraData);
+	continuous_read_pico_reauth(continuous, NULL, returnedStoredData);
+	continuous_update_state(continuous, REAUTHSTATE_PAUSE, extraDataOrNull);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_PAUSE);
+	service_check_extradata(returnedStoredData);
 
-	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_CONTINUE, NULL);
+	extraDataOrNull = service_update_extradata(extraData);
+	continuous_read_pico_reauth(continuous, NULL, returnedStoredData);
+	continuous_update_state(continuous, REAUTHSTATE_CONTINUE, extraDataOrNull);
 	ck_assert(continuous_get_state(continuous) == REAUTHSTATE_CONTINUE);
+	service_check_extradata(returnedStoredData);
 	
-	continuous_read_pico_reauth(continuous, NULL, NULL);
-	continuous_update_state(continuous, REAUTHSTATE_STOP, NULL);
+	extraDataOrNull = service_update_extradata(extraData);
+	continuous_read_pico_reauth(continuous, NULL, returnedStoredData);
+	continuous_update_state(continuous, REAUTHSTATE_STOP, extraDataOrNull);
+	service_check_extradata(returnedStoredData);
 
 	continuous_finish(continuous);
 

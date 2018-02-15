@@ -76,11 +76,11 @@ DLL_PUBLIC bool continuous_cycle_start(Continuous * continuous, Buffer const * e
 DLL_PUBLIC bool continuous_cycle_start_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
 DLL_PUBLIC bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, Buffer * returnedStoredData);
 DLL_PUBLIC bool continuous_write_pico_reauth(Continuous * continuous, Buffer const * extraData);
-DLL_PUBLIC bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, Buffer * returnedStoredData, int * timeout);
 DLL_PUBLIC bool continuous_write_service_reauth(Continuous * continuous, Buffer const * extraData);
 DLL_PUBLIC bool continuous_update_state(Continuous * continuous, REAUTHSTATE new_state, Buffer const * extraData);
 DLL_PUBLIC bool continuous_reauth(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
-DLL_PUBLIC bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData, int * timeout);
 DLL_PUBLIC bool continuous_continue(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData);
 DLL_PUBLIC bool continuous_finish(Continuous * continuous);
 
@@ -92,7 +92,7 @@ DLL_PUBLIC void continuous_get_shared_key(Continuous * continuous, Buffer * shar
 DLL_PUBLIC void continuous_set_channel(Continuous * continuous, RVPChannel * channel);
 DLL_PUBLIC RVPChannel * continuous_get_channel(Continuous * continuous);
 
-DLL_PUBLIC bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData);
+DLL_PUBLIC bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData, int * timeout);
 
 // Function definitions
 

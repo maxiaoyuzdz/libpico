@@ -477,7 +477,7 @@ bool continuous_cycle_start_pico(Continuous * continuous, Buffer const * extraDa
 	if (result) {
 		sequenceNum = sequencenumber_new();
 
-		result = continuous_read_service_reauth(continuous, sequenceNum, NULL, returnedStoredData);
+		result = continuous_read_service_reauth(continuous, sequenceNum, returnedStoredData, NULL);
 
 		// Increment and store the sequence number received from the Service
 		sequencenumber_increment(sequenceNum);
@@ -514,6 +514,7 @@ bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * seque
 	Buffer * buffer;
 	MessagePicoReAuth * messagepicoreauth;
 	SequenceNumber * sequenceNum;
+	Buffer const * extraData;
 
 	buffer = buffer_new(0);
 	sequenceNum = sequencenumber_new();
@@ -526,9 +527,10 @@ bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * seque
 	result = channel_read(continuous->channel, buffer);
 	LOG(LOG_INFO, "PicoReauth received\n");
 
+	messagepicoreauth = messagepicoreauth_new();
+
 	if (result) {
 		// Deserialize the message
-		messagepicoreauth = messagepicoreauth_new();
 		messagepicoreauth_set(messagepicoreauth, continuous->sharedKey, NULL);
 		result = messagepicoreauth_deserialize(messagepicoreauth, buffer);
 	}
@@ -536,7 +538,6 @@ bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * seque
 	if (result) {
 		messagepicoreauth_get_sequencenum(messagepicoreauth, sequenceNum);
 		continuous_set_current_state(continuous, messagepicoreauth_get_reauthstate(messagepicoreauth));
-		messagepicoreauth_delete(messagepicoreauth);
 
 		if (sequenceNumber != NULL) {
 			// This is an initialisation message, so store the receied sequence
@@ -554,12 +555,20 @@ bool continuous_read_pico_reauth(Continuous * continuous, SequenceNumber * seque
 
 	if (result && sequencenumber_match) {
 		sequencenumber_increment(continuous->picoSeqNumber);
+
+		if (returnedStoredData != NULL) {
+			extraData = messagepicoreauth_get_extra_data(messagepicoreauth);
+			buffer_clear(returnedStoredData);
+			buffer_append_buffer(returnedStoredData, extraData);
+		}
+
 	} else {
 		continuous_set_current_state(continuous, REAUTHSTATE_ERROR);
 	}
 
 	buffer_delete(buffer);
 	sequencenumber_delete(sequenceNum);
+	messagepicoreauth_delete(messagepicoreauth);
 	
 	return result;
 }
@@ -626,7 +635,7 @@ bool continuous_write_pico_reauth(Continuous * continuous, Buffer const * extraD
  * @param returnedStoredData A buffer to store any returned extraData into.
  * @return True if the message was read correctly.
 */
-bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, int * timeout, Buffer * returnedStoredData) {
+bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * sequenceNumber, Buffer * returnedStoredData, int * timeout) {
 	bool result;
 	bool sequencenumber_match;
 	Buffer * buffer;
@@ -648,9 +657,10 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
 	result = channel_read(continuous->channel, buffer);
 	LOG(LOG_INFO, "ServiceReauth received\n");
 
+	messageservicereauth = messageservicereauth_new();
+
 	if (result) {
 		// Deserialize the message
-		messageservicereauth = messageservicereauth_new();
 		messageservicereauth_set(messageservicereauth, continuous->sharedKey, 0, REAUTHSTATE_CONTINUE, NULL);
 		result = messageservicereauth_deserialize(messageservicereauth, buffer);
 	}
@@ -661,7 +671,6 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
 		if (timeout != NULL) {
 			*timeout = MAX(messageservicereauth_get_timeout(messageservicereauth) - continuous->timeoutLeeway, 0);
 		}
-		messageservicereauth_delete(messageservicereauth);
 
 		if (sequenceNumber != NULL) {
 			// This is an initialisation message, so store the receied sequence
@@ -691,6 +700,7 @@ bool continuous_read_service_reauth(Continuous * continuous, SequenceNumber * se
 
 	buffer_delete(buffer);
 	sequencenumber_delete(sequenceNum);
+	messageservicereauth_delete(messageservicereauth);
 
 	return result;
 }
@@ -816,7 +826,7 @@ bool continuous_reauth(Continuous * continuous, Buffer const * extraData, Buffer
  *        containing data returned from Pico.
  * @return True if the authentication was successful.
  */
-bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData) {
+bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData, int * timeout) {
 	bool result;
 
 	result = continuous_write_pico_reauth(continuous, extraData);
@@ -826,7 +836,7 @@ bool continuous_reauth_pico(Continuous * continuous, Buffer const * extraData, i
 	}
 
 	if (result) {
-		result = continuous_read_service_reauth(continuous, NULL, timeout, returnedStoredData);
+		result = continuous_read_service_reauth(continuous, NULL, returnedStoredData, timeout);
 	}
 
 	return result;
@@ -891,11 +901,11 @@ bool continuous_finish(Continuous * continuous) {
  *        service
  * @return true if authentication completed successfully. false o/w.
  */
-bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, int * timeout, Buffer * returnedStoredData) {
+bool continuous_continue_pico(Continuous * continuous, Buffer const * extraData, Buffer * returnedStoredData, int * timeout) {
 	bool result;
 	REAUTHSTATE receivedState = REAUTHSTATE_INVALID;
 
-	result = continuous_reauth_pico(continuous, extraData, timeout, returnedStoredData);
+	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, timeout);
 
 	if (result) {
 		receivedState = continuous->currentState;

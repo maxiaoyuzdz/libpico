@@ -43,6 +43,11 @@
 #include <semaphore.h>
 
 // Defines
+
+#define CONT_CYCLE_MAX (3)
+
+// Structure definitions
+
 typedef enum {
 	READ,
 	CONNECTED,
@@ -54,7 +59,6 @@ typedef enum {
 	STOP_LOOP
 } EVENT_TYPE;
 
-// Structure definitions
 typedef struct {
 	EVENT_TYPE type;
 	FsmService* service;
@@ -84,8 +88,6 @@ pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 // Function definitions
 static char const * const pico_data[] = {"one", "two", NULL, "four", NULL, "six", "seven"};
 static char const * const service_data[] = {"ten", "eleven", NULL, NULL, "fourteen", "fifteen", "sixteen"};
-//static int pico_sent;
-//static int pico_received;
 
 Buffer const * pico_update_extradata(Buffer * extraData, int * pico_sent) {
 	Buffer const * extraDataOrNull;
@@ -575,11 +577,13 @@ START_TEST (fsm_pico_test) {
 	}
 	
 	void picoWrite(char const * data, size_t length, void * user_data) {
-		pthread_mutex_lock(&global_data_mutex);
-		memcpy(global_data, data, length);
-		global_data_len = length;
-		pthread_mutex_unlock(&global_data_mutex);
-		sem_post(&read_semaphore);
+		if (cycles <= CONT_CYCLE_MAX) {
+			pthread_mutex_lock(&global_data_mutex);
+			memcpy(global_data, data, length);
+			global_data_len = length;
+			pthread_mutex_unlock(&global_data_mutex);
+			sem_post(&read_semaphore);
+		}
 	}
 
 	int expectedTimeouts[] = {
@@ -612,7 +616,7 @@ START_TEST (fsm_pico_test) {
 	void picoStatusUpdate(FSMPICOSTATE state, void * user_data) {
 		if (state == FSMPICOSTATE_PICOREAUTH) {
 			cycles++;
-			if (cycles > 3) {
+			if (cycles > CONT_CYCLE_MAX) {
 				push_stop(&queue, pico, NULL, currentTime);
 				
 				pthread_mutex_lock(&global_data_mutex);
@@ -667,7 +671,7 @@ START_TEST (fsm_pico_test) {
 	result = continuous_continue(continuous, NULL, NULL);
 	ck_assert(!result);
 	
-	ck_assert(cycles == 4);
+	ck_assert(cycles == (CONT_CYCLE_MAX + 1));
 
 	Event e;
 	e.type = STOP_LOOP;
@@ -701,16 +705,19 @@ START_TEST (fsm_service_test) {
 	sem_t stop_semaphore;
 	Buffer * extraData;
 	Buffer * returnedStoredData;
+	Buffer const * extraDataOrNull;
 	int service_sent;
 	int service_received;
+	int pico_sent;
+	int pico_received;
 
 	extraData = buffer_new(0);
 	returnedStoredData = buffer_new(0);
 	
 	service_sent = 0;
 	service_received = 0;
-	//pico_sent = 0;
-	//pico_received = 0;
+	pico_sent = 0;
+	pico_received = 0;
 
 	char global_data[1024];
 	int global_data_len = 0;
@@ -771,13 +778,15 @@ START_TEST (fsm_service_test) {
 		pthread_mutex_unlock(&global_data_mutex);
 		return ret;
 	}
-	
+
 	void serviceWrite(char const * data, size_t length, void * user_data) {
-		pthread_mutex_lock(&global_data_mutex);
-		memcpy(global_data, data, length);
-		global_data_len = length;
-		pthread_mutex_unlock(&global_data_mutex);
-		sem_post(&read_semaphore);
+		if (cycles <= CONT_CYCLE_MAX) {
+			pthread_mutex_lock(&global_data_mutex);
+			memcpy(global_data, data, length);
+			global_data_len = length;
+			pthread_mutex_unlock(&global_data_mutex);
+			sem_post(&read_semaphore);
+		}
 	}
 
 	void serviceSetTimeout(int timeout, void * user_data) {
@@ -808,7 +817,7 @@ START_TEST (fsm_service_test) {
 
 		if (state == FSMSERVICESTATE_PICOREAUTH) {
 			cycles++;
-			if (cycles > 3) {
+			if (cycles > CONT_CYCLE_MAX) {
 				push_stop(&queue, NULL, serv, currentTime);
 				sem_post(&stop_semaphore);
 			}
@@ -820,7 +829,7 @@ START_TEST (fsm_service_test) {
 		}
 
 		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
-			ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "LESS!!");
+			service_check_extradata(fsmservice_get_received_extra_data(serv), & service_received);
 		}
 
 		buffer_delete(extraData);
@@ -847,24 +856,27 @@ START_TEST (fsm_service_test) {
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, shared_get_shared_key(servShared));
    
-	buffer_clear(extraData);
-	buffer_append_string(extraData, "LESS!!");
-	result = continuous_cycle_start_pico(continuous, extraData, returnedStoredData);
+
+	extraDataOrNull = pico_update_extradata(extraData, & pico_sent);
+	result = continuous_cycle_start_pico(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
-	pico_check_extradata(returnedStoredData, & service_received);
+	pico_check_extradata(returnedStoredData, & pico_received);
 
 	int timeout = 0;
-	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
+	extraDataOrNull = pico_update_extradata(extraData, & pico_sent);
+	result = continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(result);
-	pico_check_extradata(returnedStoredData, & service_received);
+	pico_check_extradata(returnedStoredData, & pico_received);
 	
-	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
+	extraDataOrNull = pico_update_extradata(extraData, & pico_sent);
+	result = continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(result);
-	pico_check_extradata(returnedStoredData, & service_received);
+	pico_check_extradata(returnedStoredData, & pico_received);
   
-	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
+	extraDataOrNull = pico_update_extradata(extraData, & pico_sent);
+	result = continuous_reauth_pico(continuous, extraDataOrNull, returnedStoredData, &timeout);
 	ck_assert(result);
-	pico_check_extradata(returnedStoredData, & service_received);
+	pico_check_extradata(returnedStoredData, & pico_received);
 
 	// Wait for the other thread to complete the cycles before stopping the loop
 	sem_wait(&stop_semaphore);
@@ -877,7 +889,7 @@ START_TEST (fsm_service_test) {
 	push_event(&queue, e);
 	pthread_join(prover_td, NULL);
 
-	ck_assert_int_eq(cycles, 4);
+	ck_assert_int_eq(cycles, (CONT_CYCLE_MAX + 1));
 	
 	channel_delete(channel);
 

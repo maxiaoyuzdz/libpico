@@ -103,6 +103,8 @@ Buffer const * pico_update_extradata(Buffer * extraData, int * pico_sent) {
 	}
 	(*pico_sent)++;
 
+	//fprintf(stderr, "Pico sending: %s\n", ((extraDataOrNull != NULL )? buffer_get_buffer(extraDataOrNull) : "NULL"));
+
 	return extraDataOrNull;
 }
 
@@ -111,7 +113,7 @@ void pico_check_extradata(Buffer const * returnedStoredData, int * pico_received
 
 	data = buffer_get_buffer(returnedStoredData);
 
-	fprintf(stderr, "Received: %s, expected: %s\n", data, ((service_data[*pico_received] != NULL )? service_data[*pico_received] : "NULL"));
+	//fprintf(stderr, "Pico received: %s, expected: %s\n", data, ((service_data[*pico_received] != NULL )? service_data[*pico_received] : "NULL"));
 
 	ck_assert(*pico_received < 7);
 	if (service_data[*pico_received] != NULL) {
@@ -137,7 +139,7 @@ Buffer const * service_update_extradata(Buffer * extraData, int * service_sent) 
 	}
 	(*service_sent)++;
 
-	fprintf(stderr, "Sending: %s\n", ((extraDataOrNull != NULL )? buffer_get_buffer(extraDataOrNull) : "NULL"));
+	//fprintf(stderr, "Service sending: %s\n", ((extraDataOrNull != NULL )? buffer_get_buffer(extraDataOrNull) : "NULL"));
 
 	return extraDataOrNull;
 }
@@ -146,6 +148,8 @@ void service_check_extradata(Buffer const * returnedStoredData, int * service_re
 	char const * data;
 
 	data = buffer_get_buffer(returnedStoredData);
+
+	//fprintf(stderr, "Service received: %s, expected: %s\n", data, ((pico_data[*service_received] != NULL )? pico_data[*service_received] : "NULL"));
 
 	ck_assert(*service_received < 7);
 	if (pico_data[*service_received] != NULL) {
@@ -385,7 +389,7 @@ START_TEST (fsm_fsm_test) {
 				push_stop(&queue, pico, NULL, currentTime);
 			}
 		}
-		if (state == FSMPICOSTATE_SERVICEREAUTH && !sendingReply) {
+		if (state == FSMPICOSTATE_PICOREAUTH && !sendingReply) {
 			if (cycles == 2) {
 				sendingReply = true;
 				ck_assert_str_eq(buffer_get_buffer(fsmpico_get_received_extra_data(pico)), "EXTRA!!");
@@ -416,7 +420,7 @@ START_TEST (fsm_fsm_test) {
 		}
 
 		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
-			if (cyclesService == 4) {
+			if (cyclesService == 3) {
 				ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "Extra reply");
 			} else {
 				ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "");
@@ -515,7 +519,22 @@ START_TEST (fsm_pico_test) {
 	currentTime = 0;
 	sem_t read_semaphore;
 	sem_t connect_semaphore;
-	
+	Buffer * extraData;
+	Buffer * returnedStoredData;
+	Buffer const * extraDataOrNull;
+	int service_sent;
+	int service_received;
+	int pico_sent;
+	int pico_received;
+
+	extraData = buffer_new(0);
+	returnedStoredData = buffer_new(0);
+
+	service_sent = 0;
+	service_received = 0;
+	pico_sent = 0;
+	pico_received = 0;
+
 	char global_data[1024];
 	int global_data_len = 0;
 	pthread_mutex_t global_data_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -601,7 +620,6 @@ START_TEST (fsm_pico_test) {
 
 	void picoSetTimeout(int timeout, void * user_data) {
 		static int i = 0;
-		fprintf(stderr, "Timeout: %d, expected: %d\n", timeout, expectedTimeouts[i]);
 		ck_assert_int_eq(expectedTimeouts[i++], timeout);
 		push_timeout(&queue, pico, NULL, currentTime, timeout);
 	}
@@ -614,6 +632,10 @@ START_TEST (fsm_pico_test) {
 	}
 
 	void picoStatusUpdate(FSMPICOSTATE state, void * user_data) {
+		Buffer * extraData;
+		Buffer const * extraDataOrNull;
+		extraData = buffer_new(0);
+
 		if (state == FSMPICOSTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > CONT_CYCLE_MAX) {
@@ -625,6 +647,17 @@ START_TEST (fsm_pico_test) {
 				sem_post(&read_semaphore);
 			}
 		}
+
+		if ((state == FSMPICOSTATE_PICOREAUTH) || (state == FSMPICOSTATE_STATUS)) {
+			extraDataOrNull = pico_update_extradata(extraData, & pico_sent);
+			fsmpico_set_outbound_extra_data(pico, extraDataOrNull);
+		}
+
+		if (state == FSMPICOSTATE_PICOREAUTH) {
+			pico_check_extradata(fsmpico_get_received_extra_data(pico), & pico_received);
+		}
+
+		buffer_delete(extraData);
 	}
 
 	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, NULL, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
@@ -655,21 +688,31 @@ START_TEST (fsm_pico_test) {
 	Continuous * continuous = continuous_new();
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, shared_get_shared_key(servShared));
-	
-	result = continuous_cycle_start(continuous, NULL, NULL);
-	ck_assert(result);
 
-	result = continuous_continue(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData, & service_sent);
+	result = continuous_cycle_start(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
+	service_check_extradata(returnedStoredData, & service_received);
+
+	extraDataOrNull = service_update_extradata(extraData, & service_sent);
+	result = continuous_continue(continuous, extraDataOrNull, returnedStoredData);
+	ck_assert(result);
+	service_check_extradata(returnedStoredData, & service_received);
 	
-	result = continuous_continue(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData, & service_sent);
+	result = continuous_continue(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
+	//service_check_extradata(returnedStoredData, & service_received);
   
-	result = continuous_continue(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData, & service_sent);
+	result = continuous_continue(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(result);
+	//service_check_extradata(returnedStoredData, & service_received);
  
-	result = continuous_continue(continuous, NULL, NULL);
+	extraDataOrNull = service_update_extradata(extraData, & service_sent);
+	result = continuous_continue(continuous, extraDataOrNull, returnedStoredData);
 	ck_assert(!result);
+	//service_check_extradata(returnedStoredData, & service_received);
 	
 	ck_assert(cycles == (CONT_CYCLE_MAX + 1));
 
@@ -693,6 +736,9 @@ START_TEST (fsm_pico_test) {
 	buffer_delete(picoIdDer);
 	users_delete(users);
 	buffer_delete(symmetricKey);
+
+	buffer_delete(extraData);
+	buffer_delete(returnedStoredData);
 }
 END_TEST
 

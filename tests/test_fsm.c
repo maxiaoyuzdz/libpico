@@ -82,6 +82,80 @@ pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 // Function definitions
+static char const * const pico_data[] = {"one", "two", NULL, "four", NULL, "six", "seven"};
+static char const * const service_data[] = {"ten", "eleven", NULL, NULL, "fourteen", "fifteen", "sixteen"};
+//static int pico_sent;
+//static int pico_received;
+
+Buffer const * pico_update_extradata(Buffer * extraData, int * pico_sent) {
+	Buffer const * extraDataOrNull;
+
+	ck_assert(*pico_sent < 7);
+	buffer_clear(extraData);
+	if (pico_data[*pico_sent] != NULL) {
+		buffer_append_string(extraData, pico_data[*pico_sent]);
+		extraDataOrNull = extraData;
+	}
+	else {
+		extraDataOrNull = NULL;
+	}
+	(*pico_sent)++;
+
+	return extraDataOrNull;
+}
+
+void pico_check_extradata(Buffer const * returnedStoredData, int * pico_received) {
+	char const * data;
+
+	data = buffer_get_buffer(returnedStoredData);
+
+	fprintf(stderr, "Received: %s, expected: %s\n", data, ((service_data[*pico_received] != NULL )? service_data[*pico_received] : "NULL"));
+
+	ck_assert(*pico_received < 7);
+	if (service_data[*pico_received] != NULL) {
+		ck_assert_str_eq(data, service_data[*pico_received]);
+	}
+	else {
+		ck_assert_str_eq(data, "");
+	}
+	(*pico_received)++;
+}
+
+Buffer const * service_update_extradata(Buffer * extraData, int * service_sent) {
+	Buffer const * extraDataOrNull;
+
+	ck_assert(*service_sent < 7);
+	buffer_clear(extraData);
+	if (service_data[*service_sent] != NULL) {
+		buffer_append_string(extraData, service_data[*service_sent]);
+		extraDataOrNull = extraData;
+	}
+	else {
+		extraDataOrNull = NULL;
+	}
+	(*service_sent)++;
+
+	fprintf(stderr, "Sending: %s\n", ((extraDataOrNull != NULL )? buffer_get_buffer(extraDataOrNull) : "NULL"));
+
+	return extraDataOrNull;
+}
+
+void service_check_extradata(Buffer const * returnedStoredData, int * service_received) {
+	char const * data;
+
+	data = buffer_get_buffer(returnedStoredData);
+
+	ck_assert(*service_received < 7);
+	if (pico_data[*service_received] != NULL) {
+		ck_assert_str_eq(data, pico_data[*service_received]);
+	}
+	else {
+		ck_assert_str_eq(data, "");
+	}
+	(*service_received)++;
+}
+
+
 void push_event(Queue* queue, Event event) {
 	bool isService = event.service != NULL;
 	bool isPico = event.pico != NULL;
@@ -338,7 +412,7 @@ START_TEST (fsm_fsm_test) {
 				fsmservice_set_outbound_extra_data(serv, NULL);
 			}
 		}
-		
+
 		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
 			if (cyclesService == 4) {
 				ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "Extra reply");
@@ -545,7 +619,6 @@ START_TEST (fsm_pico_test) {
 				global_data_len = -1;
 				pthread_mutex_unlock(&global_data_mutex);
 				sem_post(&read_semaphore);
-
 			}
 		}
 	}
@@ -626,7 +699,19 @@ START_TEST (fsm_service_test) {
 	sem_t read_semaphore;
 	sem_t authenticated_semaphore;
 	sem_t stop_semaphore;
+	Buffer * extraData;
+	Buffer * returnedStoredData;
+	int service_sent;
+	int service_received;
+
+	extraData = buffer_new(0);
+	returnedStoredData = buffer_new(0);
 	
+	service_sent = 0;
+	service_received = 0;
+	//pico_sent = 0;
+	//pico_received = 0;
+
 	char global_data[1024];
 	int global_data_len = 0;
 	pthread_mutex_t global_data_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -717,6 +802,10 @@ START_TEST (fsm_service_test) {
 	}
 	
 	void serviceStatusUpdate(int state, void * user_data) {
+		Buffer * extraData;
+		Buffer const * extraDataOrNull;
+		extraData = buffer_new(0);
+
 		if (state == FSMSERVICESTATE_PICOREAUTH) {
 			cycles++;
 			if (cycles > 3) {
@@ -724,6 +813,17 @@ START_TEST (fsm_service_test) {
 				sem_post(&stop_semaphore);
 			}
 		}
+
+		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
+			extraDataOrNull = service_update_extradata(extraData, & service_sent);
+			fsmservice_set_outbound_extra_data(serv, extraDataOrNull);
+		}
+
+		if (state == FSMSERVICESTATE_SERVICEREAUTH) {
+			ck_assert_str_eq(buffer_get_buffer(fsmservice_get_received_extra_data(serv)), "LESS!!");
+		}
+
+		buffer_delete(extraData);
 	}
 
 	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, NULL, NULL, serviceDisconnect, serviceAuthenticated, NULL, serviceStatusUpdate);
@@ -736,31 +836,35 @@ START_TEST (fsm_service_test) {
 	
 	RVPChannel * channel = channel_new();
 	channel_set_functions(channel, NULL, channelOpen, channelClose, channelWrite, channelRead, NULL, NULL, NULL);
-	Buffer * returnedExtraData = buffer_new(0);
 	channel_open(channel);
-	bool result = sigmaprover(picoShared, channel, picoExtraData, returnedExtraData);
+	bool result = sigmaprover(picoShared, channel, picoExtraData, returnedStoredData);
 	ck_assert(result);
-	
+
 	sem_wait(&authenticated_semaphore);
 	ck_assert(calledAuthenticated);
-	ck_assert(!strcmp(buffer_get_buffer(returnedExtraData), "SERVICE EXTRA"));
 
 	Continuous * continuous = continuous_new();
 	continuous_set_channel(continuous, channel);
 	continuous_set_shared_key(continuous, shared_get_shared_key(servShared));
    
-	result = continuous_cycle_start_pico(continuous, NULL, NULL);
+	buffer_clear(extraData);
+	buffer_append_string(extraData, "LESS!!");
+	result = continuous_cycle_start_pico(continuous, extraData, returnedStoredData);
 	ck_assert(result);
+	pico_check_extradata(returnedStoredData, & service_received);
 
 	int timeout = 0;
-	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
 	ck_assert(result);
+	pico_check_extradata(returnedStoredData, & service_received);
 	
-	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
 	ck_assert(result);
+	pico_check_extradata(returnedStoredData, & service_received);
   
-	result = continuous_reauth_pico(continuous, NULL, &timeout, NULL);
+	result = continuous_reauth_pico(continuous, extraData, returnedStoredData, &timeout);
 	ck_assert(result);
+	pico_check_extradata(returnedStoredData, & service_received);
 
 	// Wait for the other thread to complete the cycles before stopping the loop
 	sem_wait(&stop_semaphore);
@@ -775,7 +879,6 @@ START_TEST (fsm_service_test) {
 
 	ck_assert_int_eq(cycles, 4);
 	
-	buffer_delete(returnedExtraData);
 	channel_delete(channel);
 
 	fsmservice_delete(serv);
@@ -784,6 +887,9 @@ START_TEST (fsm_service_test) {
 	buffer_delete(picoExtraData);
 	users_delete(users);
 	buffer_delete(symmetricKey);
+
+	buffer_delete(extraData);
+	buffer_delete(returnedStoredData);
 }
 END_TEST
 

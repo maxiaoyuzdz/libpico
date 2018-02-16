@@ -376,13 +376,11 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 	int timeout;
 	Buffer * message;
 	Buffer * dataread;
-	Buffer * extraDataToSend;
 	char status;
     
 	message = buffer_new(0);
 	dataread = buffer_new(length);
 	buffer_append(dataread, data, length);
-	extraDataToSend = buffer_new(0);
 
 	// TODO: If the reads fail, should move to an error state
 	switch (fsmpico->state) {
@@ -402,7 +400,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		if (result) {
 			fsmpico->comms->authenticated((int) status, fsmpico->user_data);
 			fsmpico->comms->disconnect(fsmpico->user_data);
-            
+
 			switch (status) {
 			case MESSAGESTATUS_OK_DONE:
 				stateTransition(fsmpico, FSMPICOSTATE_FIN);
@@ -423,7 +421,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 			stateTransition(fsmpico, FSMPICOSTATE_PICOREAUTH);
 			fsmpico->reauthDelay = timeout;
 			// reply with the PicoReauth message
-			createMessagePicoReauth(fsmpico, message, extraDataToSend);
+			createMessagePicoReauth(fsmpico, message, fsmpico->extraData);
 			fsmpico->comms->write(buffer_get_buffer(message), buffer_get_pos(message), fsmpico->user_data);
 			stateTransition(fsmpico, FSMPICOSTATE_SERVICEREAUTH);
 			// set a timeout for awaiting a response
@@ -447,7 +445,6 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 
 	buffer_delete(message);
 	buffer_delete(dataread);
-	buffer_delete(extraDataToSend);
 }
 
 /**
@@ -562,7 +559,7 @@ void fsmpico_timeout(FsmPico * fsmpico) {
  * of the following two events:
  *
  * 1. FSMPICOSTATE_STATUS
- * 2. FSMPICOSTATE_SERVICEREAUTH
+ * 2. FSMPICOSTATE_PICOREAUTH
  *
  * Then make a call using this function to check whether any new data
  * has arrived (in which case, the returned buffer will be non-empty).
@@ -582,7 +579,7 @@ Buffer const * fsmpico_get_received_extra_data(FsmPico * fsmpico) {
  * update notifcation is triggered for either of the following events:
  *
  * 1. FSMPICOSTATE_STATUS
- * 2. FSMPICOSTATE_SERVICEREAUTH
+ * 2. FSMPICOSTATE_PICOREAUTH
  *
  * These two events are those that immediately proceed the arrival of a
  * Status or ServiceReauth message.

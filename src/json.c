@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
+////#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/log.h"
 #include "pico/json.h"

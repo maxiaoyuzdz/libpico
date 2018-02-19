@@ -37,7 +37,7 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <time.h>
 #include <curl/curl.h>

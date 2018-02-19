@@ -38,7 +38,7 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+////#include <malloc.h>
 #include <string.h>
 #include <curl/curl.h>
 #include <openssl/rand.h>

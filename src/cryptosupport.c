@@ -39,7 +39,7 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <openssl/rand.h>
 #include <openssl/hmac.h>

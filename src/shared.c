@@ -42,7 +42,7 @@
 
 #include <stdio.h>
 #include <openssl/ec.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/buffer.h"
 #include "pico/nonce.h"

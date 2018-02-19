@@ -44,7 +44,7 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/base64.h"
 #include "pico/keypair.h"

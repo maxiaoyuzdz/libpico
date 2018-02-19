@@ -56,7 +56,7 @@
 
 #include <stdio.h>
 #include <openssl/hmac.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/buffer.h"
 #include "pico/base64.h"

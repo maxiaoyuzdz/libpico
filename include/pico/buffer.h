@@ -48,7 +48,8 @@
 #define __BUFFER_H (1)
 
 #include <stdio.h>
-#include <malloc.h>
+//#include <malloc.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "pico/channel.h"
 #include "pico/dllpublic.h"

@@ -176,6 +176,7 @@ Now grab yourself a copy of the code from the repository and compile the librari
 \verbatim
 git clone git@github.com:mypico/libpico.git
 cd libpico
+autoreconf --force --install
 ./configure
 make
 make check

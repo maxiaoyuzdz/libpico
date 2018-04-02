@@ -1,3 +1,9 @@
+#if HAVE_CONFIG_H
+#include "pico/config.h"
+#endif
+
+#ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 #include <picobt/bt.h>
 
 typedef struct {
@@ -16,4 +22,6 @@ typedef struct {
 } BTFunctions;
 
 extern BTFunctions bt_funcs;
+
+#endif // HAVE_LIBPICOBT // Only build if Bluetooth is present
 

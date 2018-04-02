@@ -45,7 +45,8 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/nonce.h"
 #include "pico/buffer.h"

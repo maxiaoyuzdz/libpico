@@ -73,7 +73,8 @@
 
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
+//#include <malloc.h>
 #include <stdbool.h>
 #include "pico/debug.h"
 #include "pico/log.h"

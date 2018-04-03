@@ -42,6 +42,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <fcntl.h>
 
 // Defines
 
@@ -92,8 +93,8 @@ typedef struct _LocalDataFsmPico {
 	int cycles;
 	FsmPico* pico;
 	Queue queue;
-	sem_t read_semaphore;
-	sem_t connect_semaphore;
+	sem_t * read_semaphore;
+	sem_t * connect_semaphore;
 	char global_data[GLOABL_DATA_LEN];
 	int global_data_len;
 	pthread_mutex_t global_data_mutex;
@@ -105,9 +106,9 @@ typedef struct _LocalDataFsmService {
 	bool calledAuthenticated;
 	Queue queue;
 	Buffer * symmetricKey;
-	sem_t read_semaphore;
-	sem_t authenticated_semaphore;
-	sem_t stop_semaphore;
+	sem_t * read_semaphore;
+	sem_t * authenticated_semaphore;
+	sem_t * stop_semaphore;
 	char global_data[GLOABL_DATA_LEN];
 	int global_data_len;
 	pthread_mutex_t global_data_mutex;
@@ -503,7 +504,7 @@ static bool channelOpenFsmPico(RVPChannel * channel) {
 	void * user_data = channel_get_data(channel);
 	LocalDataFsmPico * local = (LocalDataFsmPico *)user_data;
 
-	sem_wait(&local->connect_semaphore);
+	sem_wait(local->connect_semaphore);
 	push_connected(&local->queue, local->pico, NULL, currentTime);
 
 	return true;
@@ -539,7 +540,7 @@ static bool channelReadFsmPico(RVPChannel * channel, Buffer * buffer) {
 
 	bool result;
 
-	sem_wait(&local->read_semaphore);
+	sem_wait(local->read_semaphore);
 	result = true;
 	pthread_mutex_lock(&local->global_data_mutex);
 	if (local->global_data_len == -1) {
@@ -563,7 +564,7 @@ static void picoWriteFsmPico(char const * data, size_t length, void * user_data)
 	memcpy(local->global_data, data, length);
 	local->global_data_len = length;
 	pthread_mutex_unlock(&local->global_data_mutex);
-	sem_post(&local->read_semaphore);
+	sem_post(local->read_semaphore);
 }
 
 static void picoSetTimeoutFsmPico(int timeout, void * user_data) {
@@ -582,7 +583,7 @@ static void picoErrorFsmPico(void * user_data) {
 static void picoReconnectFsmPico(void * user_data) {
 	LocalDataFsmPico * local = (LocalDataFsmPico *)user_data;
 
-	sem_post(&local->connect_semaphore);
+	sem_post(local->connect_semaphore);
 }
 
 static void picoDisconnectFsmPico(void * user_data) {
@@ -600,7 +601,7 @@ static void picoStatusUpdateFsmPico(FSMPICOSTATE state, void * user_data) {
 			pthread_mutex_lock(&local->global_data_mutex);
 			local->global_data_len = -1;
 			pthread_mutex_unlock(&local->global_data_mutex);
-			sem_post(&local->read_semaphore);
+			sem_post(local->read_semaphore);
 		}
 	}
 }
@@ -631,8 +632,11 @@ START_TEST (fsm_pico_test) {
 	local.global_data[0] = 0;
 	local.global_data_len = 0;
 	pthread_mutex_init(& local.global_data_mutex, NULL);
-	sem_init(&local.read_semaphore, 0, 0);
-	sem_init(&local.connect_semaphore, 0, 0);
+
+	local.read_semaphore = sem_open("picofsmpico_read", O_CREAT | O_EXCL, 0644, 0);
+	ck_assert(local.read_semaphore != SEM_FAILED);
+	local.connect_semaphore = sem_open("picofsmpico_connect", O_CREAT | O_EXCL, 0644, 0);
+	ck_assert(local.connect_semaphore != SEM_FAILED);
 
 	picoShared = shared_new();
 	shared_load_or_generate_pico_keys(picoShared, "testpicokey.pub", "testpicokey.priv");
@@ -658,7 +662,7 @@ START_TEST (fsm_pico_test) {
 	// We have to duplicate the objects because fsmpico tries to delete them later
 	cryptosupport_getprivateder(picoIdSKey, picoIdDer);
 	fsmpico_start(local.pico, picoExtraData, EC_KEY_dup(servIdPKey), EC_KEY_dup(picoIdPKey), cryptosupport_read_buffer_private_key(picoIdDer));
-	sem_post(&local.connect_semaphore);
+	sem_post(local.connect_semaphore);
 
 	pthread_t prover_td;
 	pthread_create(&prover_td, NULL, event_loop_thread, &local.queue);
@@ -719,6 +723,11 @@ START_TEST (fsm_pico_test) {
 	buffer_delete(picoIdDer);
 	users_delete(users);
 	buffer_delete(symmetricKey);
+
+	sem_close(local.read_semaphore);
+	sem_unlink("picofsmpico_read");
+	sem_close(local.connect_semaphore);
+	sem_unlink("picofsmpico_connect");
 }
 END_TEST
 
@@ -767,7 +776,7 @@ static bool channelReadFsmService(RVPChannel * channel, Buffer * buffer) {
 	LocalDataFsmService * local = (LocalDataFsmService *)user_data;
 	bool result;
 
-	sem_wait(&local->read_semaphore);
+	sem_wait(local->read_semaphore);
 	result = true;
 	pthread_mutex_lock(&local->global_data_mutex);
 	if (local->global_data_len == -1) {
@@ -791,7 +800,7 @@ static void serviceWriteFsmService(char const * data, size_t length, void * user
 	memcpy(local->global_data, data, length);
 	local->global_data_len = length;
 	pthread_mutex_unlock(&local->global_data_mutex);
-	sem_post(&local->read_semaphore);
+	sem_post(local->read_semaphore);
 }
 
 static void serviceSetTimeoutFsmService(int timeout, void * user_data) {
@@ -825,7 +834,7 @@ static void serviceAuthenticatedFsmService(int status, void * user_data) {
 	ck_assert(buffer_equals(receivedSymKey, local->symmetricKey));
 	ck_assert(!strcmp(buffer_get_buffer(user), "Synchronous"));
 	ck_assert(!strcmp(buffer_get_buffer(extraData), "p@ssword"));
-	sem_post(&local->authenticated_semaphore);
+	sem_post(local->authenticated_semaphore);
 }
 
 static void serviceStatusUpdateFsmService(int state, void * user_data) {
@@ -835,7 +844,7 @@ static void serviceStatusUpdateFsmService(int state, void * user_data) {
 		local->cycles++;
 		if (local->cycles > 3) {
 			push_stop(&local->queue, NULL, local->serv, currentTime);
-			sem_post(&local->stop_semaphore);
+			sem_post(local->stop_semaphore);
 		}
 	}
 }
@@ -861,9 +870,13 @@ START_TEST (fsm_service_test) {
 	local.global_data[0] = 0;
 	local.global_data_len = 0;
 	pthread_mutex_init(& local.global_data_mutex, NULL);
-	sem_init(&local.read_semaphore, 0, 0);
-	sem_init(&local.authenticated_semaphore, 0, 0);
-	sem_init(&local.stop_semaphore, 0, 0);
+
+	local.read_semaphore = sem_open("picofsmservice_read", O_CREAT | O_EXCL, 0644, 0);
+	ck_assert(local.read_semaphore != SEM_FAILED);
+	local.authenticated_semaphore = sem_open("picofsmservice_authenticate", O_CREAT | O_EXCL, 0644, 0);
+	ck_assert(local.authenticated_semaphore != SEM_FAILED);
+	local.stop_semaphore = sem_open("picofsmservice_stop", O_CREAT | O_EXCL, 0644, 0);
+	ck_assert(local.stop_semaphore != SEM_FAILED);
 
 	picoShared = shared_new();
 	shared_load_or_generate_pico_keys(picoShared, "testpicokey.pub", "testpicokey.priv");
@@ -899,7 +912,7 @@ START_TEST (fsm_service_test) {
 	bool result = sigmaprover(picoShared, channel, picoExtraData, returnedExtraData);
 	ck_assert(result);
 	
-	sem_wait(&local.authenticated_semaphore);
+	sem_wait(local.authenticated_semaphore);
 	ck_assert(local.calledAuthenticated);
 	ck_assert(!strcmp(buffer_get_buffer(returnedExtraData), "SERVICE EXTRA"));
 
@@ -921,7 +934,7 @@ START_TEST (fsm_service_test) {
 	ck_assert(result);
 
 	// Wait for the other thread to complete the cycles before stopping the loop
-	sem_wait(&local.stop_semaphore);
+	sem_wait(local.stop_semaphore);
 
 	event.type = STOP_LOOP;
 	event.service = local.serv;
@@ -941,6 +954,13 @@ START_TEST (fsm_service_test) {
 	buffer_delete(picoExtraData);
 	users_delete(users);
 	buffer_delete(local.symmetricKey);
+
+	sem_close(local.read_semaphore);
+	sem_unlink("picofsmservice_read");
+	sem_close(local.authenticated_semaphore);
+	sem_unlink("picofsmservice_authenticate");
+	sem_close(local.stop_semaphore);
+	sem_unlink("picofsmservice_stop");
 }
 END_TEST
 

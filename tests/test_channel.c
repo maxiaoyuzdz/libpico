@@ -178,26 +178,26 @@ START_TEST (set_url) {
 	result = channel_decode_url_bt("btspp://a5c32c6100e7", address, & port);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 0);
+	ck_assert_int_eq(port, 0);
 
 	result = channel_decode_url_bt("btspp://a5c32c6100e7:23", address, & port);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 23);
+	ck_assert_int_eq(port, 23);
 
 	result = channel_decode_url_bt("btspp://a5c32c6100e7:05", address, & port);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 5);
+	ck_assert_int_eq(port, 5);
 
 	result = channel_decode_url_bt("btspp://a5c32c6100e7:9", address, & port);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 9);
+	ck_assert_int_eq(port, 9);
 
 	result = channel_decode_url_bt("btspp://a5c32c6100e7:23", NULL, & port);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
-	ck_assert_uint_eq(port, 23);
+	ck_assert_int_eq(port, 23);
 
 	result = channel_decode_url_bt("btspp://a5c32c6100e7:23", address, NULL);
 	ck_assert_msg(result, "Bluetooth URL decode failed");
@@ -244,26 +244,26 @@ START_TEST (set_url) {
 	result = channel_decode_url_btout("btspp://a5c32c6100e7", address, & port);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 0);
+	ck_assert_int_eq(port, 0);
 
 	result = channel_decode_url_btout("btspp://a5c32c6100e7:23", address, & port);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 23);
+	ck_assert_int_eq(port, 23);
 
 	result = channel_decode_url_btout("btspp://a5c32c6100e7:05", address, & port);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 5);
+	ck_assert_int_eq(port, 5);
 
 	result = channel_decode_url_btout("btspp://a5c32c6100e7:9", address, & port);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");
 	ck_assert_str_eq(buffer_get_buffer(address), "a5c32c6100e7");
-	ck_assert_uint_eq(port, 9);
+	ck_assert_int_eq(port, 9);
 
 	result = channel_decode_url_btout("btspp://a5c32c6100e7:23", NULL, & port);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");
-	ck_assert_uint_eq(port, 23);
+	ck_assert_int_eq(port, 23);
 
 	result = channel_decode_url_btout("btspp://a5c32c6100e7:23", address, NULL);
 	ck_assert_msg(result, "Bluetooth Out URL decode failed");

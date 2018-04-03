@@ -32,6 +32,7 @@
  */
 
 #include <check.h>
+#include <stdint.h>
 #include <pico/fsmservice.h>
 #include <pico/fsmpico.h>
 #include <pico/cryptosupport.h>
@@ -274,6 +275,10 @@ START_TEST (fsm_fsm_test) {
 		push_timeout(&queue, NULL, serv, currentTime, timeout);
 	}
 
+	void serviceError(void * user_data) {
+		ck_abort_msg("Service reached error state");
+	}
+
 	void serviceDisconnect(void * user_data){
 		push_disconnected(&queue, pico, NULL, currentTime);
 	}
@@ -284,6 +289,10 @@ START_TEST (fsm_fsm_test) {
 
 	void picoSetTimeout(int timeout, void * user_data) {
 		push_timeout(&queue, pico, NULL, currentTime, timeout);
+	}
+
+	void picoError(void * user_data) {
+		ck_abort_msg("Pico reached error state");
 	}
 
 	void picoReconnect(void * user_data) {
@@ -318,7 +327,7 @@ START_TEST (fsm_fsm_test) {
 
 	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, NULL, NULL, serviceDisconnect, serviceAuthenticated, NULL, NULL);
 	fsmservice_set_continuous(serv, true);
-	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, NULL, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
+	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, picoError, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
 
 	// We have to duplicate the objects because fsmpico tries to delete them later
 	cryptosupport_getprivateder(picoIdSKey, picoIdDer);
@@ -363,7 +372,7 @@ void * event_loop_thread(void * arg) {
 				// Wait a little bit so the other thread can synchronize
 				currentTime += 100;
 				pthread_mutex_unlock(&queue_mutex);
-				sleep(0.01);
+				usleep(1);
 				pthread_mutex_lock(&queue_mutex);
 				head = queuePtr->head;
 			}
@@ -378,7 +387,7 @@ void * event_loop_thread(void * arg) {
 			free(head);
 		} else {
 		   pthread_mutex_unlock(&queue_mutex);
-		   sleep(0.1); 
+		   usleep(10);
 		}
 	}
 
@@ -470,8 +479,13 @@ START_TEST (fsm_pico_test) {
 
 	void picoSetTimeout(int timeout, void * user_data) {
 		static int i = 0;
-		ck_assert_int_eq(expectedTimeouts[i++], timeout);
+		ck_assert_int_eq(expectedTimeouts[i], timeout);
+		i++;
 		push_timeout(&queue, pico, NULL, currentTime, timeout);
+	}
+
+	void picoError(void * user_data) {
+		ck_abort_msg("Pico reached error state");
 	}
 
 	void picoReconnect(void * user_data) {
@@ -496,7 +510,7 @@ START_TEST (fsm_pico_test) {
 		}
 	}
 
-	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, NULL, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
+	fsmpico_set_functions(pico, picoWrite, picoSetTimeout, picoError, picoReconnect, picoDisconnect, NULL, NULL, picoStatusUpdate);
 
 	// We have to duplicate the objects because fsmpico tries to delete them later
 	cryptosupport_getprivateder(picoIdSKey, picoIdDer);
@@ -645,6 +659,10 @@ START_TEST (fsm_service_test) {
 		push_timeout(&queue, NULL, serv, currentTime, timeout);
 	}
 
+	void serviceError(void * user_data) {
+		ck_abort_msg("Service reached error state");
+	}
+
 	void serviceDisconnect(void * user_data){
 		push_disconnected(&queue, NULL, serv, currentTime);
 	}
@@ -672,7 +690,7 @@ START_TEST (fsm_service_test) {
 		}
 	}
 
-	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, NULL, NULL, serviceDisconnect, serviceAuthenticated, NULL, serviceStatusUpdate);
+	fsmservice_set_functions(serv, serviceWrite, serviceSetTimeout, serviceError, NULL, serviceDisconnect, serviceAuthenticated, NULL, serviceStatusUpdate);
 	fsmservice_set_continuous(serv, true);
 
 	fsmservice_start(serv, servShared, users, servExtraData);
@@ -701,7 +719,7 @@ START_TEST (fsm_service_test) {
 	int timeout = 0;
 	result = continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(result);
-	
+
 	result = continuous_reauth_pico(continuous, NULL, &timeout);
 	ck_assert(result);
   

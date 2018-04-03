@@ -468,7 +468,7 @@ void * event_loop_thread(void * arg) {
 		if (head != NULL) {
 			while (head->event.type == TIMEOUT && head->event.time > currentTime) {
 				// Wait a little bit so the other thread can synchronize
-				currentTime += 100;
+				currentTime += 25;
 				pthread_mutex_unlock(&queue_mutex);
 				usleep(1);
 				pthread_mutex_lock(&queue_mutex);
@@ -633,9 +633,9 @@ START_TEST (fsm_pico_test) {
 	local.global_data_len = 0;
 	pthread_mutex_init(& local.global_data_mutex, NULL);
 
-	local.read_semaphore = sem_open("picofsmpico_read", O_CREAT | O_EXCL, 0644, 0);
+	local.read_semaphore = sem_open("picofsmpicoread", O_CREAT, 0644, 0);
 	ck_assert(local.read_semaphore != SEM_FAILED);
-	local.connect_semaphore = sem_open("picofsmpico_connect", O_CREAT | O_EXCL, 0644, 0);
+	local.connect_semaphore = sem_open("picofsmpicoconnect", O_CREAT, 0644, 0);
 	ck_assert(local.connect_semaphore != SEM_FAILED);
 
 	picoShared = shared_new();
@@ -725,9 +725,9 @@ START_TEST (fsm_pico_test) {
 	buffer_delete(symmetricKey);
 
 	sem_close(local.read_semaphore);
-	sem_unlink("picofsmpico_read");
+	sem_unlink("picofsmpicoread");
 	sem_close(local.connect_semaphore);
-	sem_unlink("picofsmpico_connect");
+	sem_unlink("picofsmpicoconnect");
 }
 END_TEST
 
@@ -871,11 +871,11 @@ START_TEST (fsm_service_test) {
 	local.global_data_len = 0;
 	pthread_mutex_init(& local.global_data_mutex, NULL);
 
-	local.read_semaphore = sem_open("picofsmservice_read", O_CREAT | O_EXCL, 0644, 0);
+	local.read_semaphore = sem_open("picofsmserviceread", O_CREAT, 0644, 0);
 	ck_assert(local.read_semaphore != SEM_FAILED);
-	local.authenticated_semaphore = sem_open("picofsmservice_authenticate", O_CREAT | O_EXCL, 0644, 0);
+	local.authenticated_semaphore = sem_open("picofsmserviceauthenticated", O_CREAT, 0644, 0);
 	ck_assert(local.authenticated_semaphore != SEM_FAILED);
-	local.stop_semaphore = sem_open("picofsmservice_stop", O_CREAT | O_EXCL, 0644, 0);
+	local.stop_semaphore = sem_open("picofsmservicestop", O_CREAT, 0644, 0);
 	ck_assert(local.stop_semaphore != SEM_FAILED);
 
 	picoShared = shared_new();
@@ -956,14 +956,13 @@ START_TEST (fsm_service_test) {
 	buffer_delete(local.symmetricKey);
 
 	sem_close(local.read_semaphore);
-	sem_unlink("picofsmservice_read");
+	sem_unlink("picofsmserviceread");
 	sem_close(local.authenticated_semaphore);
-	sem_unlink("picofsmservice_authenticate");
+	sem_unlink("picofsmserviceauthenticated");
 	sem_close(local.stop_semaphore);
-	sem_unlink("picofsmservice_stop");
+	sem_unlink("picofsmservicestop");
 }
 END_TEST
-
 
 int main (void) {
 	int number_failed;

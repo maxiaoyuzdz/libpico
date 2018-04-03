@@ -389,8 +389,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 		result = readMessageStatus(fsmpico, dataread, receivedExtraData, &status);
 		if (result) {
 			fsmpico->comms->authenticated((int) status, fsmpico->user_data);
-			fsmpico->comms->disconnect(fsmpico->user_data);
-            
+
 			switch (status) {
 			case MESSAGESTATUS_OK_DONE:
 				stateTransition(fsmpico, FSMPICOSTATE_FIN);
@@ -402,6 +401,7 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 				stateTransition(fsmpico, FSMPICOSTATE_ERROR);
 				break;
 			}
+			fsmpico->comms->disconnect(fsmpico->user_data);
 		}
 		break;
 	case FSMPICOSTATE_CONTSTARTSERVICE:

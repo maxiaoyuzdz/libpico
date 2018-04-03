@@ -8,7 +8,7 @@ lib_mockbt_la_SOURCES = \
 lib_mockbt_la_CFLAGS  = $(AM_CFLAGS) @PICOBT_CFLAGS@
 
 check_PROGRAMS = $(TESTS)
-AM_CFLAGS = -Wall -Werror -I"../include" -pthread @CHECK_CFLAGS@
+AM_CFLAGS = -Wall -Werror -I"../include" -pthread @CHECK_CFLAGS@ @PICOLIB_CFLAGS@
 LDADD = ../libpico.la .libs/lib_mockbt.la @CHECK_LIBS@ @PICOLIB_LIBS@
 
 

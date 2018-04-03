@@ -108,6 +108,8 @@ void fsmpico_set_userdata(FsmPico * fsmpico, void * user_data);
 void fsmpico_start(FsmPico * fsmpico, Buffer const * extraData, EC_KEY * serviceIdPubKey, EC_KEY * clientIdPubKey, EVP_PKEY * clientIdPrivKey);
 void fsmpico_stop(FsmPico * fsmpico);
 FSMPICOSTATE fsmpico_get_state(FsmPico * fsmpico);
+void fsmpico_sendstop(FsmPico * fsmpico);
+
 
 // Call these functions when an event occurs
 void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length);

@@ -40,6 +40,8 @@
 #include "pico/config.h"
 #endif
 
+#include "pico/channel.h"
+
 #ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
 
 #include "pico/buffer.h"

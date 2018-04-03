@@ -40,6 +40,7 @@
 #define __CHANNEL_RVP_H (1)
 
 #include "pico/buffer.h"
+#include "pico/channel.h"
 #include "pico/dllpublic.h"
 
 // Defines

@@ -44,7 +44,8 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/cryptosupport.h"
 #include "pico/json.h"

@@ -54,7 +54,7 @@
 typedef struct _RVPChannel RVPChannel;
 
 // See buffer.h for more details.
-typedef struct _Buffer Buffer;
+//typedef struct _Buffer Buffer;
 
 typedef bool (*ChannelDelete)(RVPChannel * channel);
 typedef bool (*ChannelOpen)(RVPChannel * channel);

@@ -72,7 +72,7 @@ START_TEST (continuous_constructor_test) {
 END_TEST
 
 void * pico_main(void * thread_data) {
-	sleep(0.5);
+	sleep(1);
 	PicoThreadData * data = (PicoThreadData*) thread_data;
     int timeout;
 

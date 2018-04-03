@@ -38,7 +38,8 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
+//#include <malloc.h>
 #include <string.h>
 #include <openssl/rand.h>
 #include <openssl/err.h>

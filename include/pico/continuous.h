@@ -53,6 +53,7 @@
 #include "pico/auth.h"
 #include "pico/dllpublic.h"
 #include "pico/messagepicoreauth.h"
+#include "pico/channel.h"
 
 // Defines
 

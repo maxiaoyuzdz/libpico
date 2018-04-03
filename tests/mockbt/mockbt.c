@@ -1,3 +1,9 @@
+#if HAVE_CONFIG_H
+#include "pico/config.h"
+#endif
+
+#ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 #include "mockbt.h"
 #include <stdlib.h>
 
@@ -52,4 +58,6 @@ FUNCTION1(bt_err_t, bt_get_device_name, bt_addr_t*);
 FUNCTION2(bt_err_t, bt_set_timeout, bt_socket_t*, int);
 FUNCTION2(void, bt_addr_to_str_compact, const bt_addr_t*, char*);
 FUNCTION2(bt_err_t, bt_str_compact_to_addr, const char*, bt_addr_t*);
+
+#endif // HAVE_LIBPICOBT // Only build if Bluetooth is present
 

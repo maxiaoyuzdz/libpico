@@ -71,7 +71,8 @@
  */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
+//#include <malloc.h>
 #include "pico/debug.h"
 #include "pico/log.h"
 #include "pico/messagestart.h"
@@ -410,7 +411,12 @@ void fsmpico_read(FsmPico * fsmpico, char const * data, size_t length) {
 			stateTransition(fsmpico, FSMPICOSTATE_PICOREAUTH);
 			LOG(LOG_DEBUG, "Timeout set to: %d", timeout);
 			// Wait for timeout
-			fsmpico->comms->setTimeout(MAX((timeout - CONTAUTH_LEEWAY), 0), fsmpico->user_data);
+			if (fsmpico->currentState != REAUTHSTATE_STOP) {
+				fsmpico->comms->setTimeout(MAX((timeout - CONTAUTH_LEEWAY), 1), fsmpico->user_data);
+			}
+			else {
+				fsmpico->comms->setTimeout(1, fsmpico->user_data);
+			}
 		}
 		break;
 	default:
@@ -525,6 +531,12 @@ void fsmpico_timeout(FsmPico * fsmpico) {
 	buffer_delete(message);
 }
 
+void fsmpico_sendstop(FsmPico * fsmpico) {
+	fsmpico->currentState = REAUTHSTATE_STOP;
+	if (fsmpico->state == FSMPICOSTATE_PICOREAUTH) {
+		fsmpico->comms->setTimeout(1, fsmpico->user_data);
+	}
+}
 
 void stateTransition(FsmPico* fsmpico, FSMPICOSTATE newState) {
 	fsmpico->state = newState;
@@ -675,7 +687,9 @@ static bool readMessageServiceReauth(FsmPico * fsmpico, Buffer const * message, 
     
 	if (result) {
 		messageservicereauth_get_sequencenum(messageservicereauth, sequenceNum);
-		fsmpico->currentState = messageservicereauth_get_reauthstate(messageservicereauth);
+		if (fsmpico->currentState != REAUTHSTATE_STOP) {
+			fsmpico->currentState = messageservicereauth_get_reauthstate(messageservicereauth);
+		}
 		*timeout = messageservicereauth_get_timeout(messageservicereauth);
 
 		if (fsmpico->state == FSMPICOSTATE_CONTSTARTSERVICE) {

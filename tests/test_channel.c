@@ -31,15 +31,22 @@
  *
  */
 
+#if HAVE_CONFIG_H
 #include "pico/config.h"
+#endif
 
 #include <check.h>
 #include <pthread.h>
 #include "pico/channel.h"
 #include "pico/channel_rvp.h"
+
+#ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 #include "pico/channel_bt.h"
 #include "pico/channel_btout.h"
 #include "mockbt/mockbt.h"
+
+#endif // HAVE_LIBPICOBT // Only build if Bluetooth is present
 
 // Defines
 
@@ -312,6 +319,8 @@ START_TEST (set_url) {
 }
 END_TEST
 
+#ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 START_TEST (channel_set_bt_bluetooth_not_present) {
 	RVPChannel * channel;
    	bool result;
@@ -382,6 +391,8 @@ START_TEST (channel_set_bt_error_registering_service) {
 }
 END_TEST
 
+#endif // HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 int main (void) {
 	int number_failed;
 	Suite * s;
@@ -395,8 +406,14 @@ int main (void) {
 	tcase_add_test(tc, echo_test);
 	tcase_add_test(tc, get_url);
 	tcase_add_test(tc, set_url);
+
+#ifdef HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 	tcase_add_test(tc, channel_set_bt_bluetooth_not_present);
 	tcase_add_test(tc, channel_set_bt_error_registering_service);
+
+#endif // HAVE_LIBPICOBT // Only build if Bluetooth is present
+
 	suite_add_tcase(s, tc);
 	sr = srunner_create(s);
 
